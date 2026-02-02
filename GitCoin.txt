@@ -1,0 +1,1412 @@
+# GitCoin: A Decentralized, Incentivized Network for Git Repository Storage
+
+**Version 1.0**  
+**February 2026**
+
+**Abstract**
+
+GitCoin is a decentralized peer-to-peer network for hosting Git repositories where storage nodes are economically incentivized through cryptographic proof-of-availability challenges rather than traditional centralized infrastructure. Users pay network fees proportional to storage and bandwidth consumption, while nodes earn cryptocurrency rewards for reliably storing and serving repository fragments. Using threshold secret sharing (branded as "Shamir's Magical Bullshit"), GitCoin ensures repositories remain reconstructable even with partial node failures, creating a self-regulating, fault-tolerant ecosystem for versioned data storage. This paper presents the mathematical foundations, economic model, security considerations, and implementation strategy for a production-ready system.
+
+---
+
+## Table of Contents
+
+1. [Introduction](#1-introduction)
+2. [Problem Statement](#2-problem-statement)
+3. [System Architecture](#3-system-architecture)
+4. [Mathematical Foundations](#4-mathematical-foundations)
+5. [Economic Model](#5-economic-model)
+6. [Security & Fault Tolerance](#6-security--fault-tolerance)
+7. [Network Protocol](#7-network-protocol)
+8. [Implementation Considerations](#8-implementation-considerations)
+9. [Performance Analysis](#9-performance-analysis)
+10. [Use Cases & Market Positioning](#10-use-cases--market-positioning)
+11. [Future Work](#11-future-work)
+12. [Conclusion](#12-conclusion)
+13. [References](#13-references)
+14. [Appendices](#14-appendices)
+
+---
+
+## 1. Introduction
+
+### 1.1 Motivation
+
+The current paradigm for Git repository hosting relies on centralized platforms (GitHub, GitLab, Bitbucket) or self-managed infrastructure. Both approaches concentrate critical maintenance tasks—server provisioning, backup strategies, uptime monitoring, and disaster recovery—onto either corporate entities or individual system administrators. This centralization creates several problems:
+
+- **Single points of failure**: Platform outages affect millions of repositories simultaneously
+- **Censorship risk**: Centralized authorities can remove repositories unilaterally
+- **Cost inefficiency**: Users pay for features bundled with hosting, whether needed or not
+- **Lock-in effects**: Migration between platforms requires significant technical effort
+
+GitCoin addresses these issues by distributing repository storage across a network of independent nodes, using economic incentives to ensure reliability without requiring centralized coordination.
+
+### 1.2 Core Innovation
+
+The fundamental insight is that **storage availability can be treated as a commodity market** where:
+
+1. Nodes compete on reliability and latency, not feature sets
+2. Users pay only for actual storage and bandwidth consumed
+3. Cryptographic challenges verify storage without trusted intermediaries
+4. Threshold encoding provides fault tolerance through mathematical redundancy
+
+### 1.3 Design Philosophy
+
+GitCoin is designed around three principles:
+
+**Principle 1: Boring Tasks Should Be Automated**  
+Routine maintenance (backups, replication, monitoring) should emerge from economic incentives rather than human labor.
+
+**Principle 2: Trust Through Verification**  
+Nodes prove storage capability cryptographically; reputation emerges from verified performance.
+
+**Principle 3: Pay for What You Use**  
+Costs scale linearly with storage size and access frequency, not user count or feature tiers.
+
+---
+
+## 2. Problem Statement
+
+### 2.1 The Cost Structure of Traditional Git Hosting
+
+Traditional Git hosting exhibits the following cost equation:
+
+```
+C_traditional = C_storage + C_bandwidth + C_admin + C_infrastructure + C_features
+
+Where:
+C_storage       = storage_GB × $/GB/month
+C_bandwidth     = bandwidth_GB × $/GB
+C_admin         = admin_hours × $/hour
+C_infrastructure = servers + networking + security
+C_features      = CI/CD + issue tracking + project management
+```
+
+Most users pay for `C_features` even when only requiring `C_storage + C_bandwidth`. This bundling creates market inefficiency.
+
+### 2.2 The Maintenance Burden
+
+Self-hosted Git infrastructure requires:
+
+- Backup systems with geographic redundancy
+- Monitoring and alerting infrastructure  
+- Security patching and updates
+- Capacity planning and scaling
+- Disaster recovery procedures
+
+These tasks are **necessary but undifferentiated**—they provide no competitive advantage yet consume significant resources.
+
+### 2.3 The Centralization Problem
+
+Centralized platforms introduce systemic risks:
+
+- **Platform risk**: Service discontinuation (Google Code, SourceForge decline)
+- **Regulatory risk**: Government-mandated content removal
+- **Censorship risk**: Terms of Service enforcement as content control
+- **Privacy risk**: Centralized metadata collection
+
+A truly decentralized alternative must solve these issues while maintaining usability.
+
+---
+
+## 3. System Architecture
+
+### 3.1 Network Topology
+
+GitCoin operates as a structured peer-to-peer network with three participant types:
+
+**Users** initiate push and pull operations, paying network fees  
+**Nodes** store repository fragments and respond to availability challenges  
+**Validators** (initially a subset of nodes) verify proof-of-availability and distribute rewards
+
+```
+┌─────────────────────────────────────────────────┐
+│                    User Layer                    │
+│  (Git CLI with GitCoin shim for push/pull)      │
+└────────────────┬────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────┐
+│              Discovery Layer (DHT)               │
+│  (Kademlia-based node discovery & routing)      │
+└────────────────┬────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────┐
+│               Storage Layer                      │
+│  (Nodes storing Shamir fragments k-of-n)        │
+└────────────────┬────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────┐
+│             Validation Layer                     │
+│  (Proof-of-availability challenges & rewards)   │
+└─────────────────────────────────────────────────┘
+```
+
+### 3.2 Repository Fragment Distribution
+
+Each Git repository is processed as follows:
+
+1. **Pack Generation**: Git objects are compressed into pack files using delta compression
+2. **Fragmentation**: Pack files are split into fixed-size chunks (default: 512KB)
+3. **Threshold Encoding**: Each chunk is encoded using Shamir Secret Sharing into `n` shares requiring `k` for reconstruction
+4. **Distribution**: Shares are distributed to nodes selected via DHT routing
+5. **Metadata Storage**: Repository metadata (commit graph, object index) is stored redundantly
+
+```
+Repository (100 MB)
+    ↓ [Git Pack]
+Pack File (40 MB compressed)
+    ↓ [Chunking]
+Chunks (80 × 512KB)
+    ↓ [Shamir k=5, n=9]
+Fragments (720 total, 80 chunks × 9 shares)
+    ↓ [DHT Distribution]
+Nodes (distributed across network)
+```
+
+### 3.3 Data Flow
+
+**Push Operation:**
+```
+User → Authentication → Fee Payment → Pack Generation → 
+Fragment Creation → DHT Routing → Node Storage → 
+Confirmation → Metadata Update
+```
+
+**Pull Operation:**
+```
+User → Authentication → Fee Payment → Metadata Retrieval →
+Fragment Location (DHT) → Fragment Retrieval (k nodes) →
+Reconstruction → Git Pack → User
+```
+
+---
+
+## 4. Mathematical Foundations
+
+### 4.1 Shamir Secret Sharing
+
+GitCoin uses Shamir's Secret Sharing scheme for threshold encoding. Given a secret `S`, the scheme generates `n` shares where any `k` shares can reconstruct `S`.
+
+**Construction:**
+
+1. Choose a prime `p > S` (typically 256-bit for cryptographic security)
+2. Select random coefficients `a₁, a₂, ..., aₖ₋₁` in GF(p)
+3. Construct polynomial: `f(x) = S + a₁x + a₂x² + ... + aₖ₋₁xᵏ⁻¹`
+4. Generate shares: `(i, f(i))` for `i = 1, 2, ..., n`
+
+**Reconstruction (Lagrange Interpolation):**
+
+Given shares `{(x₁, y₁), (x₂, y₂), ..., (xₖ, yₖ)}`:
+
+```
+S = f(0) = Σᵢ₌₁ᵏ yᵢ × Πⱼ₌₁,ⱼ≠ᵢᵏ (xⱼ/(xⱼ - xᵢ))
+```
+
+Where all arithmetic is performed in GF(p).
+
+**Security Properties:**
+
+- **Perfect Secrecy**: Knowing fewer than `k` shares reveals zero information about `S`
+- **Reconstruction Threshold**: Exactly `k` shares are necessary and sufficient
+- **Computational Efficiency**: O(k²) complexity for reconstruction
+
+### 4.2 Redundancy Analysis
+
+**Storage Overhead:**
+
+```
+Overhead_ratio = n/k
+
+Examples:
+k=3, n=5  → 1.67× overhead (67% increase)
+k=5, n=9  → 1.80× overhead (80% increase)
+k=10, n=15 → 1.50× overhead (50% increase)
+```
+
+**Fault Tolerance:**
+
+```
+Max_node_failures = n - k
+
+Examples:
+k=3, n=5  → Survives 2 failures (40% of nodes)
+k=5, n=9  → Survives 4 failures (44% of nodes)
+k=10, n=15 → Survives 5 failures (33% of nodes)
+```
+
+**Optimal Parameter Selection:**
+
+The optimal `k` and `n` depend on network churn rate `λ` (nodes leaving per unit time):
+
+```
+P_data_loss = P(>n-k nodes fail before replication)
+            = 1 - Σᵢ₌₀ⁿ⁻ᵏ (n choose i) × λⁱ × (1-λ)ⁿ⁻ⁱ
+
+For acceptable loss probability P_acceptable (e.g., 10⁻⁶):
+Choose n such that P_data_loss < P_acceptable
+```
+
+### 4.3 Reconstruction Probability
+
+Given node availability `α` (probability a node is online):
+
+```
+P_successful_reconstruction = Σᵢ₌ₖⁿ (n choose i) × αⁱ × (1-α)ⁿ⁻ⁱ
+
+Example (k=5, n=9, α=0.9):
+P_success = 0.9999 (99.99%)
+```
+
+This high success probability even with 90% individual node uptime demonstrates the power of threshold encoding.
+
+---
+
+## 5. Economic Model
+
+### 5.1 Fee Structure
+
+Users pay fees for two operations:
+
+**Push Fee (Storage):**
+```
+F_push = size_MB × base_rate_per_MB × congestion_multiplier × (n/k)
+
+Where:
+base_rate_per_MB    = 0.001 GitCoin/MB (adjustable)
+congestion_multiplier = 1 + (active_pushes / network_capacity)
+(n/k)               = redundancy overhead
+```
+
+**Pull Fee (Bandwidth):**
+```
+F_pull = size_MB × base_rate_per_MB × 0.5
+
+Pull fees are lower (50% of push) because they impose less storage burden.
+```
+
+### 5.2 Node Reward Mechanism
+
+Nodes earn rewards through three channels:
+
+**1. Storage Rewards (Passive)**
+```
+R_storage = storage_GB × block_reward_rate × uptime_score
+
+Where:
+block_reward_rate = total_network_fees × 0.7 / total_storage_GB
+uptime_score     = challenges_passed / challenges_issued
+```
+
+**2. Challenge Rewards (Active)**
+```
+R_challenge = challenge_bonus × (1 + speed_bonus)
+
+Where:
+challenge_bonus = 0.01 GitCoin per successful challenge
+speed_bonus    = max(0, 1 - response_time/timeout) × 0.5
+```
+
+**3. Bandwidth Rewards (Usage-based)**
+```
+R_bandwidth = bytes_served × bandwidth_rate
+
+Where:
+bandwidth_rate = 0.0005 GitCoin/MB
+```
+
+**Total Node Revenue:**
+```
+R_total = R_storage + R_challenge + R_bandwidth
+```
+
+### 5.3 Economic Sustainability
+
+For the network to be sustainable, nodes must be profitable:
+
+```
+Profit = R_total - (C_storage + C_bandwidth + C_electricity + C_hardware_amortization)
+
+Target profit margin: 20-40%
+```
+
+**Break-even Analysis** (Example Node: 1TB storage, 1Gbps connection):
+
+```
+Monthly Costs:
+C_storage    = $5 (SSD amortization)
+C_bandwidth  = $10 (residential 1Gbps)
+C_electricity = $3 (50W × $0.12/kWh × 720hrs)
+C_total      = $18/month
+
+Required Revenue:
+R_target = $18 / 0.7 = $25.71/month (for 30% margin)
+
+Required Storage:
+If block_reward_rate = 0.035 GitCoin/GB/month
+Required: 734 GB active storage @ 90% uptime
+
+If GitCoin = $0.10:
+Required: $25.71 / $0.10 = 257.1 GitCoin/month
+```
+
+This demonstrates that **residential hardware can profitably participate** in the network.
+
+### 5.4 Token Economics
+
+**GitCoin Supply:**
+- **Initial Supply**: 100,000,000 GitCoin (100M)
+- **Emission Schedule**: 2% annual inflation, decreasing 0.1% per year
+- **Allocation**:
+  - 40% - Node operators (rewards pool)
+  - 30% - Network development fund
+  - 20% - Early adopters / airdrop
+  - 10% - Reserved for protocol upgrades
+
+**Deflationary Mechanisms:**
+- 10% of all push fees are burned
+- 5% of pull fees are burned
+- Transaction fees for ledger operations
+
+**Value Accrual:**
+```
+GitCoin_demand = (Push_volume + Pull_volume) / Token_velocity
+
+Where:
+Token_velocity = transactions_per_token per time period
+```
+
+---
+
+## 6. Security & Fault Tolerance
+
+### 6.1 Threat Model
+
+**Attack Vectors:**
+
+1. **Sybil Attacks**: Adversary creates many fake nodes to control fragment distribution
+2. **Leeching**: Nodes claim to store fragments but don't (save costs)
+3. **Data Withholding**: Malicious nodes refuse to serve fragments
+4. **Eclipse Attacks**: Isolating users from honest nodes via DHT manipulation
+5. **Spam**: Flooding network with junk repositories
+
+### 6.2 Defense Mechanisms
+
+**Sybil Resistance:**
+- **Stake Requirement**: Nodes must stake minimum GitCoin (e.g., 100 GC)
+- **Proof-of-Work Join**: New nodes solve computational puzzle to join
+- **Reputation System**: Long-lived nodes with high uptime score gain priority
+
+**Leeching Prevention (Proof-of-Availability):**
+
+Nodes are challenged randomly to prove fragment possession:
+
+```python
+def challenge_protocol(node, repo_hash, challenge_nonce):
+    """
+    Node must reconstruct specific byte range of fragment
+    using challenge_nonce to prevent precomputation
+    """
+    byte_range = hash(challenge_nonce) % fragment_size
+    reconstructed_bytes = node.reconstruct_fragment(repo_hash, byte_range)
+    
+    expected_hash = merkle_tree.get_hash(repo_hash, byte_range)
+    actual_hash = SHA256(reconstructed_bytes)
+    
+    return expected_hash == actual_hash
+```
+
+**Challenge Frequency:**
+```
+Challenges_per_block = sqrt(total_fragments) × security_parameter
+
+For 1M fragments, security_parameter = 10:
+Challenges_per_block = sqrt(1,000,000) × 10 = 10,000 challenges/block
+
+Expected time to challenge = total_fragments / challenges_per_block
+                            = 1,000,000 / 10,000 = 100 blocks
+```
+
+**Data Withholding:**
+- **Reputation Slashing**: Nodes failing to serve data lose uptime score
+- **Timeouts**: If node doesn't respond in 30s, try alternate nodes
+- **Redundancy**: With n=9, k=5, you can lose 4 nodes and still reconstruct
+
+**Eclipse Attack Mitigation:**
+- **DHT Diversity**: Connect to nodes in multiple DHT buckets
+- **Random Walk Discovery**: Periodically discover nodes via random DHT walks
+- **Bootstrap Node Diversity**: Maintain list of geographically distributed bootstrap nodes
+
+**Spam Prevention:**
+- **Minimum Fee**: 0.001 GitCoin per MB deters micro-spam
+- **Rate Limiting**: Max 100 pushes per user per day (configurable)
+- **Garbage Collection**: Unreferenced objects deleted after 90 days of inactivity
+
+### 6.3 Byzantine Fault Tolerance
+
+GitCoin tolerates Byzantine faults (malicious nodes) through:
+
+**Assumption**: Fewer than `f` out of `n` nodes are Byzantine, where `f < n - k`.
+
+**Theorem**: If `k + f < n`, reconstruction succeeds even with `f` Byzantine nodes providing invalid shares.
+
+**Proof Sketch**:
+1. Lagrange interpolation requires exactly `k` shares
+2. If `f` Byzantine nodes provide invalid shares, we have `n - f` honest shares
+3. As long as `n - f ≥ k`, we can select `k` honest shares
+4. This holds when `f ≤ n - k`
+
+**Example**: With k=5, n=9, the system tolerates up to 4 Byzantine nodes.
+
+---
+
+## 7. Network Protocol
+
+### 7.1 Node Discovery (Kademlia DHT)
+
+GitCoin uses a Kademlia Distributed Hash Table for node discovery and routing.
+
+**Node ID Space**: 256-bit identifiers (SHA256 of public key)
+
+**Distance Metric**:
+```
+d(a, b) = a XOR b
+```
+
+**Routing Table**: Log₂(N) buckets of size k, where bucket i contains nodes at distance [2ⁱ, 2ⁱ⁺¹)
+
+**Lookup Algorithm**:
+```python
+def find_nodes(target_id, k=20):
+    """
+    Find k closest nodes to target_id
+    """
+    contacted = set()
+    closest = routing_table.find_closest(target_id, k)
+    
+    while True:
+        # Query alpha closest uncontacted nodes
+        to_query = [n for n in closest[:alpha] if n not in contacted]
+        if not to_query:
+            break
+            
+        # Parallel queries
+        results = parallel_query(to_query, 'FIND_NODE', target_id)
+        contacted.update(to_query)
+        
+        # Update closest set
+        for node_list in results:
+            closest = merge_and_sort(closest, node_list, target_id)[:k]
+    
+    return closest[:k]
+```
+
+### 7.2 Fragment Storage Protocol
+
+**Store Request:**
+```
+STORE {
+    repo_hash: SHA256,
+    fragment_id: uint32,
+    fragment_data: bytes,
+    share_id: uint32,
+    signature: ECDSA(repo_hash || fragment_id)
+}
+```
+
+**Store Response:**
+```
+STORE_ACK {
+    node_id: 256-bit,
+    repo_hash: SHA256,
+    fragment_id: uint32,
+    stored_hash: SHA256(fragment_data),
+    timestamp: unix_time,
+    signature: ECDSA(stored_hash || timestamp)
+}
+```
+
+### 7.3 Retrieval Protocol
+
+**Retrieve Request:**
+```
+GET_FRAGMENT {
+    repo_hash: SHA256,
+    fragment_id: uint32,
+    payment_proof: {
+        amount: GitCoin,
+        signature: ECDSA(repo_hash || amount)
+    }
+}
+```
+
+**Retrieve Response:**
+```
+FRAGMENT_DATA {
+    fragment_data: bytes,
+    share_id: uint32,
+    merkle_proof: [hash],  // Proves fragment authenticity
+    signature: ECDSA(fragment_data)
+}
+```
+
+### 7.4 Challenge Protocol
+
+**Challenge Issuance:**
+```
+CHALLENGE {
+    challenge_id: UUID,
+    repo_hash: SHA256,
+    fragment_id: uint32,
+    byte_range: (start, end),
+    nonce: 256-bit,
+    timeout: 30  // seconds
+}
+```
+
+**Challenge Response:**
+```
+CHALLENGE_PROOF {
+    challenge_id: UUID,
+    reconstructed_hash: SHA256(fragment_data[byte_range]),
+    response_time: milliseconds,
+    signature: ECDSA(reconstructed_hash)
+}
+```
+
+**Validation:**
+```python
+def validate_challenge_response(challenge, response, expected_hash):
+    # Verify response time
+    if response.response_time > challenge.timeout * 1000:
+        return False, "Timeout"
+    
+    # Verify hash
+    if response.reconstructed_hash != expected_hash:
+        return False, "Invalid hash"
+    
+    # Verify signature
+    if not verify_signature(response, node.public_key):
+        return False, "Invalid signature"
+    
+    return True, "Success"
+```
+
+---
+
+## 8. Implementation Considerations
+
+### 8.1 Git Integration
+
+GitCoin integrates with Git via a custom remote helper:
+
+**Installation:**
+```bash
+# Install GitCoin CLI
+pip install gitcoin-cli
+
+# Configure Git remote
+git remote add gitcoin gc://repo-hash
+```
+
+**Push Implementation:**
+```bash
+#!/bin/bash
+# git-remote-gc (Git remote helper)
+
+case "$1" in
+    capabilities)
+        echo "push"
+        echo "fetch"
+        echo ""
+        ;;
+    push)
+        while read src dst; do
+            gitcoin-cli push "$src" "$dst"
+        done
+        ;;
+    fetch)
+        gitcoin-cli fetch "$2"
+        ;;
+esac
+```
+
+**Python CLI (Simplified):**
+```python
+# gitcoin_cli/push.py
+
+def push(repo_path, remote_url):
+    # 1. Generate pack file
+    pack_file = subprocess.check_output([
+        'git', 'pack-objects', '--stdout', '--all'
+    ], cwd=repo_path)
+    
+    # 2. Chunk pack file
+    chunks = chunk_data(pack_file, chunk_size=512*1024)  # 512KB chunks
+    
+    # 3. Fragment each chunk
+    fragments = []
+    for chunk in chunks:
+        shares = shamir_split(chunk, k=threshold, n=replication)
+        fragments.extend(shares)
+    
+    # 4. Calculate fee
+    total_size = len(pack_file)
+    fee = calculate_push_fee(total_size)
+    
+    # 5. Pay fee
+    payment_tx = pay_fee(fee, user_wallet)
+    
+    # 6. Distribute fragments
+    for fragment in fragments:
+        target_nodes = dht_lookup(fragment.id)
+        store_fragment(target_nodes, fragment, payment_tx)
+    
+    # 7. Update metadata
+    update_repo_metadata(remote_url, pack_file_hash, fragments)
+```
+
+### 8.2 Node Implementation
+
+**Node Daemon Architecture:**
+```python
+class GitCoinNode:
+    def __init__(self, config):
+        self.node_id = generate_node_id()
+        self.storage = FragmentStorage(config.storage_path)
+        self.dht = KademliaDHT(self.node_id)
+        self.wallet = Wallet(config.wallet_path)
+        self.challenge_handler = ChallengeHandler(self.storage)
+        
+    async def run(self):
+        # Start DHT server
+        await self.dht.listen(port=config.port)
+        
+        # Join network
+        await self.dht.bootstrap(config.bootstrap_nodes)
+        
+        # Start RPC server for fragment storage
+        rpc_server = RPCServer(self.handle_request)
+        await rpc_server.start()
+        
+        # Start challenge listener
+        asyncio.create_task(self.challenge_loop())
+        
+    async def handle_request(self, request):
+        if request.type == 'STORE':
+            return await self.handle_store(request)
+        elif request.type == 'GET_FRAGMENT':
+            return await self.handle_retrieve(request)
+        elif request.type == 'CHALLENGE':
+            return await self.handle_challenge(request)
+            
+    async def challenge_loop(self):
+        while True:
+            # Listen for challenges from validators
+            challenge = await self.challenge_queue.get()
+            proof = self.challenge_handler.generate_proof(challenge)
+            await self.submit_proof(proof)
+```
+
+### 8.3 Storage Backend
+
+**Fragment Storage Schema:**
+```python
+class FragmentStorage:
+    def __init__(self, base_path):
+        self.base_path = base_path
+        self.db = sqlite3.connect(f"{base_path}/fragments.db")
+        self._init_schema()
+        
+    def _init_schema(self):
+        self.db.execute("""
+            CREATE TABLE IF NOT EXISTS fragments (
+                repo_hash TEXT,
+                fragment_id INTEGER,
+                share_id INTEGER,
+                data BLOB,
+                stored_at INTEGER,
+                last_challenged INTEGER,
+                PRIMARY KEY (repo_hash, fragment_id, share_id)
+            )
+        """)
+        
+        self.db.execute("""
+            CREATE TABLE IF NOT EXISTS challenges (
+                challenge_id TEXT PRIMARY KEY,
+                repo_hash TEXT,
+                fragment_id INTEGER,
+                success BOOLEAN,
+                response_time INTEGER,
+                challenged_at INTEGER
+            )
+        """)
+        
+    def store_fragment(self, repo_hash, fragment_id, share_id, data):
+        self.db.execute("""
+            INSERT OR REPLACE INTO fragments 
+            (repo_hash, fragment_id, share_id, data, stored_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (repo_hash, fragment_id, share_id, data, int(time.time())))
+        self.db.commit()
+        
+    def get_fragment(self, repo_hash, fragment_id):
+        cursor = self.db.execute("""
+            SELECT data, share_id FROM fragments
+            WHERE repo_hash = ? AND fragment_id = ?
+        """, (repo_hash, fragment_id))
+        return cursor.fetchone()
+```
+
+### 8.4 Ledger Design
+
+GitCoin uses a simple append-only ledger with Merkle tree verification:
+
+**Transaction Types:**
+- `PUSH_FEE`: User pays for push operation
+- `PULL_FEE`: User pays for pull operation
+- `STORAGE_REWARD`: Node earns for storage
+- `CHALLENGE_REWARD`: Node earns for successful challenge
+- `BANDWIDTH_REWARD`: Node earns for serving data
+
+**Ledger Entry:**
+```python
+@dataclass
+class Transaction:
+    tx_id: str
+    tx_type: str  # PUSH_FEE, PULL_FEE, etc.
+    from_addr: str
+    to_addr: str
+    amount: Decimal
+    metadata: dict  # repo_hash, fragment_ids, etc.
+    timestamp: int
+    signature: bytes
+    
+    def hash(self):
+        return hashlib.sha256(
+            f"{self.tx_id}{self.from_addr}{self.to_addr}"
+            f"{self.amount}{self.timestamp}".encode()
+        ).digest()
+```
+
+**Merkle Tree for Verification:**
+```python
+class MerkleTree:
+    def __init__(self, transactions):
+        self.leaves = [tx.hash() for tx in transactions]
+        self.tree = self._build_tree(self.leaves)
+        
+    def _build_tree(self, leaves):
+        if len(leaves) == 1:
+            return leaves[0]
+        
+        tree = []
+        for i in range(0, len(leaves), 2):
+            left = leaves[i]
+            right = leaves[i+1] if i+1 < len(leaves) else left
+            parent = hashlib.sha256(left + right).digest()
+            tree.append(parent)
+        
+        return self._build_tree(tree)
+    
+    def get_root(self):
+        return self.tree
+```
+
+---
+
+## 9. Performance Analysis
+
+### 9.1 Latency Analysis
+
+**Push Operation Latency:**
+```
+T_push = T_pack + T_fragment + T_distribute + T_confirm
+
+Where:
+T_pack       = git pack-objects time (~1-2s for typical repo)
+T_fragment   = shamir_split time (O(k×n×chunk_count))
+T_distribute = network_latency × log(N) + storage_write
+T_confirm    = 2 × network_RTT (round-trip confirmation)
+
+Example (100MB repo, k=5, n=9):
+T_pack       = 1.5s
+T_fragment   = 0.8s (195 chunks × 5×9 shares)
+T_distribute = 0.3s (DHT lookup) + 2s (parallel upload)
+T_confirm    = 0.2s
+Total        = 4.8s
+```
+
+**Pull Operation Latency:**
+```
+T_pull = T_lookup + T_retrieve + T_reconstruct + T_unpack
+
+Where:
+T_lookup      = DHT lookup time (O(log N))
+T_retrieve    = parallel fragment fetch (limited by slowest k nodes)
+T_reconstruct = shamir_reconstruct time (O(k²×chunk_count))
+T_unpack      = git unpack-objects time
+
+Example (100MB repo):
+T_lookup      = 0.3s
+T_retrieve    = 3s (fetch k=5 fragments for 195 chunks)
+T_reconstruct = 1.2s
+T_unpack      = 1.8s
+Total         = 6.3s
+```
+
+**Comparison with GitHub:**
+```
+GitHub clone (100MB repo): ~4-8s (depending on network)
+GitCoin pull (100MB repo): ~6-7s
+
+Overhead: 20-30% slower due to reconstruction
+```
+
+### 9.2 Storage Efficiency
+
+**Effective Storage Usage:**
+```
+Storage_effective = Repository_size × (n/k) × (1 + metadata_overhead)
+
+Where:
+n/k = 1.8 (for k=5, n=9)
+metadata_overhead = 0.05 (5% for indices, hashes, etc.)
+
+Example (100MB repository):
+Storage_effective = 100MB × 1.8 × 1.05 = 189MB
+```
+
+**Git Pack Compression:**
+Git's delta compression typically reduces repository size by 50-70%:
+
+```
+Storage_with_compression = Original_size × compression_ratio × (n/k)
+
+Example (500MB working tree):
+Pack_size = 500MB × 0.4 = 200MB
+GitCoin_storage = 200MB × 1.8 = 360MB total network storage
+```
+
+### 9.3 Network Bandwidth
+
+**Bandwidth per Push:**
+```
+BW_push = Pack_size × n
+
+Example (40MB pack, n=9):
+BW_push = 40MB × 9 = 360MB total network upload
+```
+
+**Bandwidth per Pull:**
+```
+BW_pull = Pack_size × k
+
+Example (40MB pack, k=5):
+BW_pull = 40MB × 5 = 200MB total network download
+```
+
+**Optimization via Erasure Coding:**
+Potential 20-30% bandwidth reduction by using Reed-Solomon codes instead of Shamir (trade-off: slightly weaker security guarantees).
+
+### 9.4 Scalability
+
+**Network Capacity:**
+```
+Max_throughput = (Total_nodes × Avg_bandwidth) / n
+
+Example (10,000 nodes, 100Mbps average):
+Max_throughput = (10,000 × 100Mbps) / 9 = 111Gbps
+Daily capacity  = 111Gbps × 86400s / 8 = 1.2PB/day
+```
+
+**Storage Capacity:**
+```
+Total_storage = Nodes × Avg_storage × utilization
+
+Example (10,000 nodes, 1TB each, 70% utilization):
+Total_storage = 10,000 × 1TB × 0.7 = 7PB
+```
+
+---
+
+## 10. Use Cases & Market Positioning
+
+### 10.1 Primary Use Cases
+
+**1. Archive-First Repositories**
+- Large ML model weights (Stable Diffusion, LLaMA variants)
+- Scientific datasets (genomics, astronomy, climate)
+- Compliance archives (financial, healthcare)
+
+**Value Proposition:** Lower cost than centralized storage, cryptographically verified integrity, no single point of failure.
+
+**2. Privacy-Conscious Organizations**
+- Corporations avoiding US/EU data jurisdiction conflicts
+- Political activists in authoritarian regimes
+- Security researchers (exploit databases)
+
+**Value Proposition:** No central authority can be compelled to reveal data or metadata; fragment distribution across jurisdictions.
+
+**3. Cost-Optimized DevOps**
+- Startups with large monorepos
+- Open-source projects with TB-scale assets
+- Game development (large binary assets)
+
+**Value Proposition:** Pay only for storage and bandwidth used, not per-seat licensing.
+
+### 10.2 Market Sizing
+
+**Total Addressable Market (TAM):**
+```
+TAM = GitHub_users × Avg_storage × $/GB/year × Market_share_potential
+
+GitHub (100M users, 200GB avg, $60/TB/year):
+TAM = 100M × 0.2TB × $60 × 0.01 (1% capture) = $120M/year
+```
+
+**Serviceable Obtainable Market (SOM):**
+Initial target: 10,000 users storing 100GB each
+```
+SOM = 10,000 × 0.1TB × $60 = $60,000/year in Year 1
+```
+
+### 10.3 Competitive Analysis
+
+| Feature | GitHub | GitLab | GitCoin |
+|---------|--------|--------|---------|
+| Censorship Resistance | ❌ | ❌ | ✅ |
+| Pay-per-use Pricing | ❌ | ❌ | ✅ |
+| Decentralized Storage | ❌ | ❌ | ✅ |
+| CI/CD Built-in | ✅ | ✅ | ❌ |
+| Issue Tracking | ✅ | ✅ | ❌ |
+| Cost (100GB repo) | $4/mo | $9/mo | ~$0.60/mo |
+
+**Strategic Positioning:**
+GitCoin is **not** a GitHub replacement. It is **complementary infrastructure** for:
+1. Cold storage / archival of large repos
+2. Mirror for censorship resistance
+3. Cost optimization for storage-heavy projects
+
+### 10.4 Adoption Strategy
+
+**Phase 1: Technical Community (Months 1-12)**
+- Target: ML researchers, blockchain projects, security researchers
+- Tactic: Integrate with Hugging Face, offer free migration from LFS
+
+**Phase 2: Enterprise Pilots (Months 12-24)**
+- Target: Fintech compliance teams, biotech (genomics data)
+- Tactic: Compliance whitepapers (GDPR, HIPAA), SLA guarantees via insurance pools
+
+**Phase 3: General Availability (Months 24+)**
+- Target: General developer population
+- Tactic: GitHub/GitLab sync tools, one-click "archive to GitCoin"
+
+---
+
+## 11. Future Work
+
+### 11.1 Technical Enhancements
+
+**1. Adaptive Redundancy**
+```python
+def adjust_redundancy(repo_hash, access_frequency, node_churn):
+    """
+    Dynamically adjust n/k ratio based on:
+    - Access frequency (hot repos need lower k for faster pulls)
+    - Node churn (unstable network needs higher n-k margin)
+    """
+    if access_frequency > threshold_hot:
+        return (k=3, n=5)  # Fast reconstruction
+    elif node_churn > threshold_unstable:
+        return (k=5, n=11)  # High fault tolerance
+    else:
+        return (k=5, n=9)  # Balanced default
+```
+
+**2. Geographic Routing**
+Route fragments to geographically diverse nodes to optimize latency and regulatory compliance:
+```python
+def geo_route_fragments(fragments, user_location, regulatory_constraints):
+    """
+    Assign fragments to nodes considering:
+    - User proximity (low latency)
+    - Regulatory requirements (e.g., GDPR = EU-only nodes)
+    """
+    pass
+```
+
+**3. Erasure Coding Alternative**
+Evaluate Reed-Solomon codes as alternative to Shamir for better bandwidth efficiency:
+```
+Reed-Solomon overhead: ~1.5× (vs 1.8× for Shamir k=5, n=9)
+Trade-off: Weaker information-theoretic security
+```
+
+**4. Layer-2 Scaling**
+Implement payment channels for high-frequency operations:
+```
+User ←→ Payment Channel ←→ Node
+(Batch micropayments, settle on-chain periodically)
+```
+
+### 11.2 Governance
+
+**Decentralized Protocol Upgrades:**
+- Parameter changes (k, n, fees) via on-chain voting
+- Weight votes by: (storage_provided × uptime_score)
+
+**Example Governance Proposal:**
+```
+Proposal: Reduce base_rate_per_MB from 0.001 to 0.0008
+Voting Period: 30 days
+Quorum: 30% of staked GitCoin
+Approval Threshold: 66%
+```
+
+### 11.3 Interoperability
+
+**Cross-Chain Bridges:**
+Allow GitCoin to be used on multiple blockchain ecosystems (Ethereum, Solana, etc.) via bridges.
+
+**IPFS Integration:**
+Store Git objects as IPFS DAGs, use GitCoin for incentivization layer on top of IPFS.
+
+**Federation Protocol:**
+Allow different GitCoin networks to federate (e.g., enterprise GitCoin network ←→ public network).
+
+---
+
+## 12. Conclusion
+
+GitCoin represents a fundamental rethinking of Git repository infrastructure, moving from centralized platforms to a decentralized, economically self-sustaining network. Through the combination of threshold secret sharing, proof-of-availability challenges, and cryptoeconomic incentives, GitCoin automates the traditionally manual tasks of repository maintenance while providing strong fault tolerance guarantees.
+
+The mathematical foundations are sound: Shamir Secret Sharing provides information-theoretic security, threshold encoding ensures reconstruction even with partial node failures, and the economic model creates profitable opportunities for node operators while remaining cost-competitive with centralized alternatives.
+
+The system is technically feasible with current technology. Residential hardware (1TB SSD, 1Gbps connection) can profitably participate in the network. Latency overhead compared to centralized systems is modest (20-30%), acceptable for archive-first and compliance use cases.
+
+GitCoin is positioned not as a GitHub replacement but as **complementary infrastructure** for:
+1. Censorship-resistant code hosting
+2. Cost-optimized storage for large repositories
+3. Regulatory-compliant data distribution
+
+The path to adoption is clear: target technical early adopters (ML researchers, blockchain projects), demonstrate value through cost savings and resilience, then expand to enterprise compliance use cases.
+
+In the spirit of Newton and Leibniz—who saw mathematical systems as reflections of divine order—GitCoin embodies the principle that **boring tasks should emerge from elegant incentive structures rather than manual labor**. The network regulates itself through economic forces, much as physical systems regulate themselves through natural laws.
+
+The code is open-source. The protocol is extensible. The economics are tunable. GitCoin is ready to move from whitepaper to implementation.
+
+---
+
+## 13. References
+
+1. Shamir, A. (1979). "How to Share a Secret". *Communications of the ACM*, 22(11), 612-613.
+
+2. Maymounkov, P., & Mazières, D. (2002). "Kademlia: A Peer-to-Peer Information System Based on the XOR Metric". *IPTPS '02: Revised Papers from the First International Workshop on Peer-to-Peer Systems*, 53-65.
+
+3. Nakamoto, S. (2008). "Bitcoin: A Peer-to-Peer Electronic Cash System". https://bitcoin.org/bitcoin.pdf
+
+4. Benet, J. (2014). "IPFS - Content Addressed, Versioned, P2P File System". *arXiv preprint arXiv:1407.3561*.
+
+5. Protocol Labs. (2017). "Filecoin: A Decentralized Storage Network". https://filecoin.io/filecoin.pdf
+
+6. Wilkinson, S., Boshevski, T., Brandoff, J., & Buterin, V. (2014). "Storj: A Peer-to-Peer Cloud Storage Network". https://storj.io/storj.pdf
+
+7. Chacon, S., & Straub, B. (2014). *Pro Git* (2nd ed.). Apress.
+
+8. Reed, I. S., & Solomon, G. (1960). "Polynomial Codes over Certain Finite Fields". *Journal of the Society for Industrial and Applied Mathematics*, 8(2), 300-304.
+
+9. Castro, M., & Liskov, B. (1999). "Practical Byzantine Fault Tolerance". *OSDI '99: Proceedings of the Third Symposium on Operating Systems Design and Implementation*, 173-186.
+
+10. Wood, G. (2014). "Ethereum: A Secure Decentralised Generalised Transaction Ledger". *Ethereum Project Yellow Paper*, 151(2014), 1-32.
+
+---
+
+## 14. Appendices
+
+### Appendix A: Shamir Secret Sharing Implementation
+
+```python
+import secrets
+from typing import List, Tuple
+
+class ShamirSecretSharing:
+    """
+    Shamir's Secret Sharing implementation in GF(2^256)
+    """
+    
+    # Use a large prime (256-bit for cryptographic security)
+    PRIME = 2**256 - 189
+    
+    @staticmethod
+    def _eval_poly(coeffs: List[int], x: int, prime: int) -> int:
+        """Evaluate polynomial at x using Horner's method"""
+        result = 0
+        for coeff in reversed(coeffs):
+            result = (result * x + coeff) % prime
+        return result
+    
+    @staticmethod
+    def split(secret: bytes, k: int, n: int) -> List[Tuple[int, bytes]]:
+        """
+        Split secret into n shares where any k can reconstruct
+        
+        Args:
+            secret: Secret data to split
+            k: Threshold (minimum shares needed)
+            n: Total number of shares
+            
+        Returns:
+            List of (share_id, share_data) tuples
+        """
+        # Convert secret to integer
+        secret_int = int.from_bytes(secret, 'big')
+        
+        # Generate random coefficients for polynomial
+        coeffs = [secret_int] + [
+            secrets.randbelow(ShamirSecretSharing.PRIME) 
+            for _ in range(k - 1)
+        ]
+        
+        # Generate shares by evaluating polynomial at x=1,2,...,n
+        shares = []
+        for i in range(1, n + 1):
+            y = ShamirSecretSharing._eval_poly(
+                coeffs, i, ShamirSecretSharing.PRIME
+            )
+            share_bytes = y.to_bytes(32, 'big')
+            shares.append((i, share_bytes))
+        
+        return shares
+    
+    @staticmethod
+    def _lagrange_interpolate(shares: List[Tuple[int, int]], prime: int) -> int:
+        """
+        Reconstruct secret using Lagrange interpolation at x=0
+        """
+        k = len(shares)
+        secret = 0
+        
+        for i in range(k):
+            xi, yi = shares[i]
+            numerator = 1
+            denominator = 1
+            
+            for j in range(k):
+                if i == j:
+                    continue
+                xj, _ = shares[j]
+                numerator = (numerator * xj) % prime
+                denominator = (denominator * (xj - xi)) % prime
+            
+            # Compute modular inverse of denominator
+            inv = pow(denominator, prime - 2, prime)  # Fermat's little theorem
+            lagrange = (yi * numerator * inv) % prime
+            secret = (secret + lagrange) % prime
+        
+        return secret
+    
+    @staticmethod
+    def reconstruct(shares: List[Tuple[int, bytes]]) -> bytes:
+        """
+        Reconstruct secret from k or more shares
+        
+        Args:
+            shares: List of (share_id, share_data) tuples
+            
+        Returns:
+            Reconstructed secret
+        """
+        # Convert shares to integers
+        shares_int = [
+            (share_id, int.from_bytes(share_data, 'big'))
+            for share_id, share_data in shares
+        ]
+        
+        # Interpolate to recover secret
+        secret_int = ShamirSecretSharing._lagrange_interpolate(
+            shares_int, ShamirSecretSharing.PRIME
+        )
+        
+        return secret_int.to_bytes(32, 'big')
+
+
+# Example usage
+if __name__ == "__main__":
+    secret = b"This is a secret message!".ljust(32, b'\x00')
+    
+    # Split into 9 shares, requiring 5 to reconstruct
+    shares = ShamirSecretSharing.split(secret, k=5, n=9)
+    
+    print(f"Generated {len(shares)} shares")
+    print(f"Any {5} can reconstruct the secret")
+    
+    # Reconstruct using first 5 shares
+    reconstructed = ShamirSecretSharing.reconstruct(shares[:5])
+    
+    assert secret == reconstructed
+    print("✓ Reconstruction successful!")
+```
+
+### Appendix B: Economic Simulation
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+class NetworkSimulation:
+    """
+    Simulate GitCoin network economics over time
+    """
+    
+    def __init__(self, num_nodes=1000, simulation_days=365):
+        self.num_nodes = num_nodes
+        self.simulation_days = simulation_days
+        
+        # Network parameters
+        self.base_rate_per_mb = 0.001  # GitCoin
+        self.storage_reward_rate = 0.035  # GitCoin/GB/month
+        self.challenge_bonus = 0.01  # GitCoin per challenge
+        
+        # Node parameters (per node averages)
+        self.avg_storage_gb = 500
+        self.avg_uptime = 0.9
+        self.storage_cost_per_gb = 0.005  # $/GB/month
+        self.bandwidth_cost = 10  # $/month
+        self.electricity_cost = 3  # $/month
+        
+        # Network activity
+        self.daily_push_volume_mb = 10000  # Total network
+        self.daily_pull_volume_mb = 50000
+        
+    def simulate(self):
+        """Run simulation and return results"""
+        results = {
+            'days': [],
+            'node_revenue': [],
+            'node_costs': [],
+            'node_profit': [],
+            'network_fees': [],
+            'gitcoin_price': []
+        }
+        
+        gitcoin_price = 0.10  # Initial price $0.10
+        
+        for day in range(self.simulation_days):
+            # Calculate daily network fees
+            push_fees = self.daily_push_volume_mb * self.base_rate_per_mb
+            pull_fees = self.daily_pull_volume_mb * self.base_rate_per_mb * 0.5
+            total_fees = push_fees + pull_fees
+            
+            # Calculate node rewards (distributed proportionally)
+            storage_rewards = (self.storage_reward_rate * self.avg_storage_gb / 30)
+            challenge_rewards = self.challenge_bonus * 10  # ~10 challenges/day
+            bandwidth_rewards = (self.daily_pull_volume_mb / self.num_nodes) * 0.0005
+            
+            node_revenue = (storage_rewards + challenge_rewards + bandwidth_rewards) * gitcoin_price
+            
+            # Calculate node costs
+            node_costs = (
+                (self.avg_storage_gb * self.storage_cost_per_gb / 30) +
+                (self.bandwidth_cost / 30) +
+                (self.electricity_cost / 30)
+            )
+            
+            node_profit = node_revenue - node_costs
+            
+            # Update GitCoin price based on demand
+            # Simple model: price increases with network usage
+            demand_factor = total_fees / (self.num_nodes * 100)
+            gitcoin_price *= (1 + demand_factor * 0.001)
+            
+            # Store results
+            results['days'].append(day)
+            results['node_revenue'].append(node_revenue)
+            results['node_costs'].append(node_costs)
+            results['node_profit'].append(node_profit)
+            results['network_fees'].append(total_fees * gitcoin_price)
+            results['gitcoin_price'].append(gitcoin_price)
+        
+        return results
+    
+    def plot_results(self, results):
+        """Plot simulation results"""
+        fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+        
+        # Node economics
+        axes[0, 0].plot(results['days'], results['node_revenue'], label='Revenue')
+        axes[0, 0].plot(results['days'], results['node_costs'], label='Costs')
+        axes[0, 0].plot(results['days'], results['node_profit'], label='Profit')
+        axes[0, 0].set_title('Node Economics ($/day)')
+        axes[0, 0].legend()
+        axes[0, 0].grid(True)
+        
+        # Network fees
+        axes[0, 1].plot(results['days'], results['network_fees'])
+        axes[0, 1].set_title('Daily Network Fees ($)')
+        axes[0, 1].grid(True)
+        
+        # GitCoin price
+        axes[1, 0].plot(results['days'], results['gitcoin_price'])
+        axes[1, 0].set_title('GitCoin Price ($)')
+        axes[1, 0].grid(True)
+        
+        # Cumulative profit
+        cumulative_profit = np.cumsum(results['node_profit'])
+        axes[1, 1].plot(results['days'], cumulative_profit)
+        axes[1, 1].set_title('Cumulative Node Profit ($)')
+        axes[1, 1].grid(True)
+        
+        plt.tight_layout()
+        plt.savefig('gitcoin_simulation.png')
+        plt.show()
+
+
+# Run simulation
+if __name__ == "__main__":
+    sim = NetworkSimulation(num_nodes=1000, simulation_days=365)
+    results = sim.simulate()
+    
+    print(f"Year-End Metrics:")
+    print(f"  Average daily node profit: ${results['node_profit'][-1]:.2f}")
+    print(f"  GitCoin price: ${results['gitcoin_price'][-1]:.4f}")
+    print(f"  Total network fees: ${results['network_fees'][-1]:.2f}/day")
+    
+    sim.plot_results(results)
+```
+
+### Appendix C: Glossary
+
+**Threshold Secret Sharing**: A cryptographic method for distributing a secret among `n` participants such that any `k` participants can reconstruct the secret, but `k-1` or fewer cannot.
+
+**Kademlia DHT**: A distributed hash table using XOR metric for peer-to-peer networks, providing O(log N) lookup complexity.
+
+**Proof-of-Availability**: A cryptographic challenge-response protocol proving a node possesses and can reconstruct stored data.
+
+**Fragment**: A piece of a Git repository pack file encoded using threshold secret sharing.
+
+**Share**: One of `n` pieces generated by threshold encoding, where `k` shares are needed for reconstruction.
+
+**Pack File**: Git's compressed format for storing multiple objects efficiently using delta compression.
+
+**Lagrange Interpolation**: A method for reconstructing a polynomial (and thus a secret) from `k` points.
+
+**Byzantine Fault**: A failure where nodes behave maliciously or unpredictably rather than simply going offline.
+
+**Erasure Coding**: A method of data protection where data is broken into fragments, expanded, encoded with redundant pieces, and stored across different locations.
+
+**GitCoin**: Both the network protocol and the cryptocurrency token used for paying fees and rewarding nodes.
+
+---
+
+**End of Whitepaper**
+
+---
+
+**License**: This whitepaper is released under CC BY-SA 4.0. Implementation is open-source (MIT License).
+
+**Contact**: For inquiries about GitCoin implementation or collaboration: [contact information]
+
+**Repository**: Full specification and reference implementation available at: [repository URL]
