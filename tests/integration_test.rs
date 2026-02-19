@@ -1,22 +1,22 @@
-use gitcoin_challenge::challenge::Challenge;
-use gitcoin_challenge::proof::ChallengeProof;
-use gitcoin_challenge::validator::validate_challenge_response;
-use gitcoin_core::config::GitCoinConfig;
-use gitcoin_core::error::LedgerError;
-use gitcoin_core::types::{Address, TransactionType};
-use gitcoin_crypto::hash::sha256_hex;
-use gitcoin_crypto::keys::KeyPair;
-use gitcoin_crypto::shamir;
-use gitcoin_ledger::merkle::MerkleTree;
-use gitcoin_ledger::store::Ledger;
-use gitcoin_ledger::transaction::Transaction;
-use gitcoin_storage::chunk::{chunk_data, reassemble_chunks};
-use gitcoin_storage::db::FragmentStore;
+use GitGold_challenge::challenge::Challenge;
+use GitGold_challenge::proof::ChallengeProof;
+use GitGold_challenge::validator::validate_challenge_response;
+use GitGold_core::config::GitGoldConfig;
+use GitGold_core::error::LedgerError;
+use GitGold_core::types::{Address, TransactionType};
+use GitGold_crypto::hash::sha256_hex;
+use GitGold_crypto::keys::KeyPair;
+use GitGold_crypto::shamir;
+use GitGold_ledger::merkle::MerkleTree;
+use GitGold_ledger::store::Ledger;
+use GitGold_ledger::transaction::Transaction;
+use GitGold_storage::chunk::{chunk_data, reassemble_chunks};
+use GitGold_storage::db::FragmentStore;
 
 /// End-to-end: chunk data → Shamir split → store fragments → retrieve → reconstruct → verify
 #[test]
 fn test_full_storage_roundtrip() {
-    let config = GitCoinConfig::default();
+    let config = GitGoldConfig::default();
 
     // Original data: simulate a small "repository"
     let original_data: Vec<u8> = (0..10_000).map(|i| (i % 251) as u8).collect();
@@ -74,7 +74,7 @@ fn test_full_storage_roundtrip() {
 /// Shamir: using different k-of-n subsets all produce the same result
 #[test]
 fn test_shamir_any_subset() {
-    let secret = b"GitCoin proof-of-availability!XY"; // exactly 32 bytes
+    let secret = b"GitGold proof-of-availability!XY"; // exactly 32 bytes
     let k = 5;
     let n = 9;
     let shares = shamir::split(secret, k, n).unwrap();
@@ -236,7 +236,7 @@ fn test_ledger_security() {
 /// Challenge end-to-end: generate challenge → create proof → validate
 #[test]
 fn test_challenge_end_to_end() {
-    let config = GitCoinConfig::default();
+    let config = GitGoldConfig::default();
     let kp = KeyPair::generate();
     let pk = kp.public_key();
 
@@ -269,7 +269,7 @@ fn test_challenge_end_to_end() {
 /// Integration: store fragments, challenge them, record results in ledger
 #[test]
 fn test_store_challenge_reward_flow() {
-    let config = GitCoinConfig::default();
+    let config = GitGoldConfig::default();
     let kp = KeyPair::generate();
     let node_address = kp.address();
 
@@ -325,7 +325,7 @@ fn test_merkle_inclusion_proofs() {
     let root = tree.root();
 
     for (i, leaf) in leaves.iter().enumerate() {
-        let leaf_hash = gitcoin_crypto::hash::sha256(leaf);
+        let leaf_hash = GitGold_crypto::hash::sha256(leaf);
         let proof = tree.proof(i).unwrap();
         assert!(
             MerkleTree::verify_proof(leaf_hash, &proof, root),
@@ -334,7 +334,7 @@ fn test_merkle_inclusion_proofs() {
     }
 
     // Tampered leaf should fail
-    let tampered = gitcoin_crypto::hash::sha256(b"tampered");
+    let tampered = GitGold_crypto::hash::sha256(b"tampered");
     let proof = tree.proof(0).unwrap();
     assert!(!MerkleTree::verify_proof(tampered, &proof, root));
 }
@@ -342,7 +342,7 @@ fn test_merkle_inclusion_proofs() {
 /// Multi-chunk storage roundtrip with larger data
 #[test]
 fn test_multi_chunk_storage_roundtrip() {
-    let config = GitCoinConfig::default();
+    let config = GitGoldConfig::default();
 
     // 1.5 MB of data → 3 chunks at 512KB
     let original: Vec<u8> = (0..1_500_000).map(|i| ((i * 13 + 7) % 256) as u8).collect();
