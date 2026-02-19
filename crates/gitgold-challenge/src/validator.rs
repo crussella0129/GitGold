@@ -1,8 +1,8 @@
-use gitcoin_core::config::GitCoinConfig;
-use gitcoin_core::error::ChallengeError;
-use gitcoin_core::types::MicroGitCoin;
-use gitcoin_crypto::hash::sha256_pair;
-use gitcoin_crypto::keys::PublicKey;
+use gitgold_core::config::GitGoldConfig;
+use gitgold_core::error::ChallengeError;
+use gitgold_core::types::MicroGitGold;
+use gitgold_crypto::hash::sha256_pair;
+use gitgold_crypto::keys::PublicKey;
 
 use crate::challenge::Challenge;
 use crate::proof::ChallengeProof;
@@ -13,7 +13,7 @@ pub struct ValidationResult {
     /// Whether the proof is valid.
     pub valid: bool,
     /// Reward amount in micro-GC (0 if invalid).
-    pub reward: MicroGitCoin,
+    pub reward: MicroGitGold,
     /// Speed bonus multiplier (0.0 to 0.5).
     pub speed_bonus: f64,
     /// Reason for failure (if any).
@@ -35,7 +35,7 @@ pub fn validate_challenge_response(
     proof: &ChallengeProof,
     fragment_data: &[u8],
     node_pubkey: &PublicKey,
-    config: &GitCoinConfig,
+    config: &GitGoldConfig,
 ) -> Result<ValidationResult, ChallengeError> {
     // 1. Check timeout
     if proof.response_time_ms > challenge.timeout_ms {
@@ -94,7 +94,7 @@ pub fn validate_challenge_response(
         (1.0 - proof.response_time_ms as f64 / challenge.timeout_ms as f64).max(0.0) * 0.5;
 
     // reward = challenge_bonus * (1 + speed_bonus)
-    let reward = (config.challenge_bonus as f64 * (1.0 + speed_bonus)) as MicroGitCoin;
+    let reward = (config.challenge_bonus as f64 * (1.0 + speed_bonus)) as MicroGitGold;
 
     Ok(ValidationResult {
         valid: true,
@@ -109,10 +109,10 @@ mod tests {
     use super::*;
     use crate::challenge::Challenge;
     use crate::proof::ChallengeProof;
-    use gitcoin_crypto::keys::KeyPair;
+    use gitgold_crypto::keys::KeyPair;
 
-    fn setup() -> (Vec<u8>, Challenge, KeyPair, GitCoinConfig) {
-        let config = GitCoinConfig::default();
+    fn setup() -> (Vec<u8>, Challenge, KeyPair, GitGoldConfig) {
+        let config = GitGoldConfig::default();
         let fragment_data = vec![0xABu8; 100_000];
         let challenge =
             Challenge::generate("repo", 0, 1, fragment_data.len(), &config).unwrap();

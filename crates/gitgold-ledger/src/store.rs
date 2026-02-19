@@ -1,5 +1,5 @@
-use gitcoin_core::error::LedgerError;
-use gitcoin_core::types::{Address, MicroGitCoin, TransactionType};
+use gitgold_core::error::LedgerError;
+use gitgold_core::types::{Address, MicroGitGold, TransactionType};
 use rusqlite::Connection;
 use std::collections::HashSet;
 
@@ -180,7 +180,7 @@ impl Ledger {
     }
 
     /// Get balance for an address.
-    pub fn balance(&self, addr: &Address) -> MicroGitCoin {
+    pub fn balance(&self, addr: &Address) -> MicroGitGold {
         self.balances.balance(addr)
     }
 
@@ -211,7 +211,7 @@ impl Ledger {
 mod tests {
     use super::*;
 
-    fn mint_tx(to: &str, amount: MicroGitCoin) -> Transaction {
+    fn mint_tx(to: &str, amount: MicroGitGold) -> Transaction {
         Transaction {
             tx_id: uuid::Uuid::new_v4().to_string(),
             tx_type: TransactionType::Mint,
@@ -224,7 +224,7 @@ mod tests {
         }
     }
 
-    fn transfer_tx(from: &str, to: &str, amount: MicroGitCoin) -> Transaction {
+    fn transfer_tx(from: &str, to: &str, amount: MicroGitGold) -> Transaction {
         Transaction {
             tx_id: uuid::Uuid::new_v4().to_string(),
             tx_type: TransactionType::Transfer,

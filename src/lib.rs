@@ -1,6 +1,6 @@
 // Root crate re-exports for integration tests.
-pub use GitGold_challenge as challenge;
-pub use GitGold_core as core;
-pub use GitGold_crypto as crypto;
-pub use GitGold_ledger as ledger;
-pub use GitGold_storage as storage;
+pub use gitgold_challenge as challenge;
+pub use gitgold_core as core;
+pub use gitgold_crypto as crypto;
+pub use gitgold_ledger as ledger;
+pub use gitgold_storage as storage;

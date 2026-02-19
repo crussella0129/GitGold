@@ -1,11 +1,11 @@
-use gitcoin_core::error::LedgerError;
-use gitcoin_core::types::{Address, MicroGitCoin};
+use gitgold_core::error::LedgerError;
+use gitgold_core::types::{Address, MicroGitGold};
 use std::collections::HashMap;
 
 /// Tracks balances for all addresses.
 #[derive(Debug, Clone)]
 pub struct BalanceTracker {
-    balances: HashMap<Address, MicroGitCoin>,
+    balances: HashMap<Address, MicroGitGold>,
 }
 
 impl BalanceTracker {
@@ -16,18 +16,18 @@ impl BalanceTracker {
     }
 
     /// Get balance for an address (0 if unknown).
-    pub fn balance(&self, addr: &Address) -> MicroGitCoin {
+    pub fn balance(&self, addr: &Address) -> MicroGitGold {
         self.balances.get(addr).copied().unwrap_or(0)
     }
 
     /// Credit (add) amount to an address.
-    pub fn credit(&mut self, addr: &Address, amount: MicroGitCoin) {
+    pub fn credit(&mut self, addr: &Address, amount: MicroGitGold) {
         let entry = self.balances.entry(addr.clone()).or_insert(0);
         *entry = entry.saturating_add(amount);
     }
 
     /// Debit (subtract) amount from an address. Fails if insufficient balance.
-    pub fn debit(&mut self, addr: &Address, amount: MicroGitCoin) -> Result<(), LedgerError> {
+    pub fn debit(&mut self, addr: &Address, amount: MicroGitGold) -> Result<(), LedgerError> {
         let current = self.balance(addr);
         if current < amount {
             return Err(LedgerError::InsufficientBalance {
@@ -44,7 +44,7 @@ impl BalanceTracker {
         &mut self,
         from: &Address,
         to: &Address,
-        amount: MicroGitCoin,
+        amount: MicroGitGold,
     ) -> Result<(), LedgerError> {
         self.debit(from, amount)?;
         self.credit(to, amount);
@@ -52,7 +52,7 @@ impl BalanceTracker {
     }
 
     /// Get all addresses with non-zero balances.
-    pub fn all_balances(&self) -> &HashMap<Address, MicroGitCoin> {
+    pub fn all_balances(&self) -> &HashMap<Address, MicroGitGold> {
         &self.balances
     }
 }

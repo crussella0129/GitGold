@@ -1,4 +1,4 @@
-use gitcoin_core::types::Hash256;
+use gitgold_core::types::Hash256;
 use sha2::{Digest, Sha256};
 
 /// Compute SHA-256 of arbitrary data.

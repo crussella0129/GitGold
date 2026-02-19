@@ -24,13 +24,13 @@ impl std::fmt::Display for Address {
     }
 }
 
-/// Token amount in micro-GitCoin (1 GC = 1,000,000 micro-GC).
-pub type MicroGitCoin = u64;
+/// Token amount in micro-GitGold (1 GG = 1,000,000 micro-GG).
+pub type MicroGitGold = u64;
 
-/// 1 GitCoin in micro-GitCoin units.
+/// 1 GitGold in micro-GitGold units.
 pub const MICRO_PER_COIN: u64 = 1_000_000;
 
-/// Transaction types on the GitCoin ledger.
+/// Transaction types on the GitGold ledger.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransactionType {
     /// User pays for a push (storage) operation.

@@ -238,7 +238,7 @@ cargo build
 cargo test
 
 # Run tests for a specific crate
-cargo test -p GitGold-crypto
+cargo test -p gitgold-crypto
 
 # Run a specific test
 cargo test test_shamir_any_subset
@@ -371,14 +371,14 @@ GitGold/
 ├── tests/
 │   └── integration_test.rs             # Cross-crate integration tests
 └── crates/
-    ├── GitGold-core/
+    ├── gitgold-core/
     │   ├── Cargo.toml
     │   └── src/
     │       ├── lib.rs
     │       ├── error.rs                # Error types (thiserror)
     │       ├── types.rs                # Hash256, Address, MicroGitGold, TransactionType
     │       └── config.rs               # GitGoldConfig with whitepaper defaults
-    ├── GitGold-crypto/
+    ├── gitgold-crypto/
     │   ├── Cargo.toml
     │   └── src/
     │       ├── lib.rs
@@ -387,14 +387,14 @@ GitGold/
     │       ├── hash.rs                 # SHA-256 convenience wrappers
     │       ├── keys.rs                 # Ed25519 key pair + address derivation
     │       └── wallet.rs               # Wallet (KeyPair wrapper)
-    ├── GitGold-storage/
+    ├── gitgold-storage/
     │   ├── Cargo.toml
     │   └── src/
     │       ├── lib.rs
     │       ├── chunk.rs                # Data chunking + reassembly
     │       ├── schema.rs               # SQLite schema initialization
     │       └── db.rs                   # FragmentStore (CRUD + challenge recording)
-    ├── GitGold-ledger/
+    ├── gitgold-ledger/
     │   ├── Cargo.toml
     │   └── src/
     │       ├── lib.rs
@@ -403,7 +403,7 @@ GitGold/
     │       ├── balance.rs              # BalanceTracker (credit/debit/transfer)
     │       ├── supply.rs               # SupplyTracker (emission + burn model)
     │       └── store.rs                # Ledger (SQLite-backed, replay-on-open)
-    └── GitGold-challenge/
+    └── gitgold-challenge/
         ├── Cargo.toml
         └── src/
             ├── lib.rs

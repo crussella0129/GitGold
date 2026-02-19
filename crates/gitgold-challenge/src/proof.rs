@@ -1,4 +1,4 @@
-use gitcoin_crypto::hash::sha256_pair;
+use gitgold_crypto::hash::sha256_pair;
 use serde::{Deserialize, Serialize};
 
 use crate::challenge::Challenge;
@@ -54,11 +54,11 @@ impl ChallengeProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gitcoin_core::config::GitCoinConfig;
+    use gitgold_core::config::GitGoldConfig;
 
     #[test]
     fn test_create_proof() {
-        let config = GitCoinConfig::default();
+        let config = GitGoldConfig::default();
         let fragment_data = vec![0xABu8; 100_000];
         let challenge =
             Challenge::generate("repo", 0, 1, fragment_data.len(), &config).unwrap();
@@ -73,7 +73,7 @@ mod tests {
 
     #[test]
     fn test_same_challenge_same_proof_hash() {
-        let config = GitCoinConfig::default();
+        let config = GitGoldConfig::default();
         let fragment_data = vec![0x42u8; 100_000];
         let challenge =
             Challenge::generate("repo", 0, 1, fragment_data.len(), &config).unwrap();

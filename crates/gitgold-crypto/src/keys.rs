@@ -1,5 +1,5 @@
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
-use gitcoin_core::types::Address;
+use gitgold_core::types::Address;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 

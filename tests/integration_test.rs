@@ -1,19 +1,19 @@
-use GitGold_challenge::challenge::Challenge;
-use GitGold_challenge::proof::ChallengeProof;
-use GitGold_challenge::validator::validate_challenge_response;
-use GitGold_core::config::GitGoldConfig;
-use GitGold_core::error::LedgerError;
-use GitGold_core::types::{Address, TransactionType};
-use GitGold_crypto::hash::sha256_hex;
-use GitGold_crypto::keys::KeyPair;
-use GitGold_crypto::shamir;
-use GitGold_ledger::merkle::MerkleTree;
-use GitGold_ledger::store::Ledger;
-use GitGold_ledger::transaction::Transaction;
-use GitGold_storage::chunk::{chunk_data, reassemble_chunks};
-use GitGold_storage::db::FragmentStore;
+use gitgold_challenge::challenge::Challenge;
+use gitgold_challenge::proof::ChallengeProof;
+use gitgold_challenge::validator::validate_challenge_response;
+use gitgold_core::config::GitGoldConfig;
+use gitgold_core::error::LedgerError;
+use gitgold_core::types::{Address, TransactionType};
+use gitgold_crypto::hash::sha256_hex;
+use gitgold_crypto::keys::KeyPair;
+use gitgold_crypto::shamir;
+use gitgold_ledger::merkle::MerkleTree;
+use gitgold_ledger::store::Ledger;
+use gitgold_ledger::transaction::Transaction;
+use gitgold_storage::chunk::{chunk_data, reassemble_chunks};
+use gitgold_storage::db::FragmentStore;
 
-/// End-to-end: chunk data → Shamir split → store fragments → retrieve → reconstruct → verify
+/// End-to-end: chunk data -> Shamir split -> store fragments -> retrieve -> reconstruct -> verify
 #[test]
 fn test_full_storage_roundtrip() {
     let config = GitGoldConfig::default();
@@ -196,7 +196,7 @@ fn test_ledger_security() {
         })
         .unwrap();
 
-    // Try to spend 300k more (only 200k left) — should fail
+    // Try to spend 300k more (only 200k left) -- should fail
     let result = ledger.append(Transaction {
         tx_id: "spend-2".to_string(),
         tx_type: TransactionType::Transfer,
@@ -212,7 +212,7 @@ fn test_ledger_security() {
         Err(LedgerError::InsufficientBalance { .. })
     ));
 
-    // Try duplicate tx_id — should fail
+    // Try duplicate tx_id -- should fail
     let result = ledger.append(Transaction {
         tx_id: "mint-1".to_string(), // duplicate!
         tx_type: TransactionType::Mint,
@@ -233,7 +233,7 @@ fn test_ledger_security() {
     assert_eq!(ledger.balance(&Address::new("bob")), 800_000);
 }
 
-/// Challenge end-to-end: generate challenge → create proof → validate
+/// Challenge end-to-end: generate challenge -> create proof -> validate
 #[test]
 fn test_challenge_end_to_end() {
     let config = GitGoldConfig::default();
@@ -255,7 +255,7 @@ fn test_challenge_end_to_end() {
     let result = validate_challenge_response(&challenge, &proof, &fragment_data, &pk, &config).unwrap();
     assert!(result.valid);
     assert!(result.reward > config.challenge_bonus); // should have speed bonus
-    assert!(result.speed_bonus > 0.4); // 50ms / 30000ms ≈ near-max speed bonus
+    assert!(result.speed_bonus > 0.4); // 50ms / 30000ms ~ near-max speed bonus
 
     // Validate with wrong data should fail
     let mut tampered_data = fragment_data.clone();
@@ -325,7 +325,7 @@ fn test_merkle_inclusion_proofs() {
     let root = tree.root();
 
     for (i, leaf) in leaves.iter().enumerate() {
-        let leaf_hash = GitGold_crypto::hash::sha256(leaf);
+        let leaf_hash = gitgold_crypto::hash::sha256(leaf);
         let proof = tree.proof(i).unwrap();
         assert!(
             MerkleTree::verify_proof(leaf_hash, &proof, root),
@@ -334,7 +334,7 @@ fn test_merkle_inclusion_proofs() {
     }
 
     // Tampered leaf should fail
-    let tampered = GitGold_crypto::hash::sha256(b"tampered");
+    let tampered = gitgold_crypto::hash::sha256(b"tampered");
     let proof = tree.proof(0).unwrap();
     assert!(!MerkleTree::verify_proof(tampered, &proof, root));
 }
@@ -344,7 +344,7 @@ fn test_merkle_inclusion_proofs() {
 fn test_multi_chunk_storage_roundtrip() {
     let config = GitGoldConfig::default();
 
-    // 1.5 MB of data → 3 chunks at 512KB
+    // 1.5 MB of data -> 3 chunks at 512KB
     let original: Vec<u8> = (0..1_500_000).map(|i| ((i * 13 + 7) % 256) as u8).collect();
     let chunks = chunk_data(&original, config.chunk_size);
     assert_eq!(chunks.len(), 3);
@@ -367,7 +367,7 @@ fn test_multi_chunk_storage_roundtrip() {
     let mut recovered_chunks = Vec::new();
     for (chunk_idx, original_chunk) in &chunks {
         let mut shares = Vec::new();
-        // Use shares 3, 4, 5 (not 1, 2 — proving any subset works)
+        // Use shares 3, 4, 5 (not 1, 2 -- proving any subset works)
         for sid in (n as u32 - k as u32 + 1)..=(n as u32) {
             let frag = store.get_fragment("bigrepo", *chunk_idx, sid).unwrap();
             shares.push(shamir::Share {

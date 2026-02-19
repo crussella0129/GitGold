@@ -1,4 +1,4 @@
-use gitcoin_core::types::Address;
+use gitgold_core::types::Address;
 
 use crate::keys::{KeyPair, PublicKey};
 

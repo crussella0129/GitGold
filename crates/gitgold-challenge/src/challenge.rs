@@ -1,5 +1,5 @@
-use gitcoin_core::config::GitCoinConfig;
-use gitcoin_core::error::ChallengeError;
+use gitgold_core::config::GitGoldConfig;
+use gitgold_core::error::ChallengeError;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
@@ -31,7 +31,7 @@ impl Challenge {
         fragment_id: u32,
         share_id: u32,
         fragment_size: usize,
-        config: &GitCoinConfig,
+        config: &GitGoldConfig,
     ) -> Result<Self, ChallengeError> {
         let min_range = config.challenge_min_bytes;
         let max_range = config.challenge_max_bytes.min(fragment_size);
@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn test_generate_challenge() {
-        let config = GitCoinConfig::default();
+        let config = GitGoldConfig::default();
         let challenge = Challenge::generate("repo123", 0, 1, 100_000, &config).unwrap();
 
         assert_eq!(challenge.repo_hash, "repo123");
@@ -98,14 +98,14 @@ mod tests {
 
     #[test]
     fn test_fragment_too_small() {
-        let config = GitCoinConfig::default();
+        let config = GitGoldConfig::default();
         let result = Challenge::generate("repo", 0, 1, 512, &config); // 512 < 1024 min
         assert!(result.is_err());
     }
 
     #[test]
     fn test_challenge_has_unique_id() {
-        let config = GitCoinConfig::default();
+        let config = GitGoldConfig::default();
         let c1 = Challenge::generate("repo", 0, 1, 100_000, &config).unwrap();
         let c2 = Challenge::generate("repo", 0, 1, 100_000, &config).unwrap();
         assert_ne!(c1.id, c2.id);
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn test_challenge_nonce_random() {
-        let config = GitCoinConfig::default();
+        let config = GitGoldConfig::default();
         let c1 = Challenge::generate("repo", 0, 1, 100_000, &config).unwrap();
         let c2 = Challenge::generate("repo", 0, 1, 100_000, &config).unwrap();
         assert_ne!(c1.nonce, c2.nonce);

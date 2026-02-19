@@ -1,8 +1,8 @@
-use gitcoin_core::types::{Address, Hash256, MicroGitCoin, TransactionType};
-use gitcoin_crypto::hash::sha256;
+use gitgold_core::types::{Address, Hash256, MicroGitGold, TransactionType};
+use gitgold_crypto::hash::sha256;
 use serde::{Deserialize, Serialize};
 
-/// A transaction on the GitCoin ledger.
+/// A transaction on the GitGold ledger.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Transaction {
     /// Unique transaction identifier.
@@ -13,8 +13,8 @@ pub struct Transaction {
     pub from: Address,
     /// Recipient address.
     pub to: Address,
-    /// Amount in micro-GitCoin.
-    pub amount: MicroGitCoin,
+    /// Amount in micro-GitGold.
+    pub amount: MicroGitGold,
     /// Optional metadata (repo_hash, fragment_ids, etc.).
     pub metadata: serde_json::Value,
     /// Unix timestamp in seconds.

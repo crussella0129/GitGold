@@ -316,27 +316,27 @@ dependencies = [
 ]
 
 [[package]]
-name = "GitGold"
+name = "gitgold"
 version = "0.1.0"
 dependencies = [
- "GitGold-challenge",
- "GitGold-core",
- "GitGold-crypto",
- "GitGold-ledger",
- "GitGold-storage",
+ "gitgold-challenge",
+ "gitgold-core",
+ "gitgold-crypto",
+ "gitgold-ledger",
+ "gitgold-storage",
  "hex",
  "serde_json",
 ]
 
 [[package]]
-name = "GitGold-challenge"
+name = "gitgold-challenge"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "GitGold-core",
- "GitGold-crypto",
- "GitGold-ledger",
- "GitGold-storage",
+ "gitgold-core",
+ "gitgold-crypto",
+ "gitgold-ledger",
+ "gitgold-storage",
  "hex",
  "rand 0.8.5",
  "serde",
@@ -345,7 +345,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "GitGold-core"
+name = "gitgold-core"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -353,11 +353,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "GitGold-crypto"
+name = "gitgold-crypto"
 version = "0.1.0"
 dependencies = [
  "ed25519-dalek",
- "GitGold-core",
+ "gitgold-core",
  "hex",
  "num-bigint",
  "num-traits",
@@ -368,12 +368,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "GitGold-ledger"
+name = "gitgold-ledger"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "GitGold-core",
- "GitGold-crypto",
+ "gitgold-core",
+ "gitgold-crypto",
  "hex",
  "rusqlite",
  "serde",
@@ -382,12 +382,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "GitGold-storage"
+name = "gitgold-storage"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "GitGold-core",
- "GitGold-crypto",
+ "gitgold-core",
+ "gitgold-crypto",
  "hex",
  "rusqlite",
  "serde",

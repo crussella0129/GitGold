@@ -1,11 +1,11 @@
 [package]
-name = "gitcoin-storage"
+name = "gitgold-storage"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-gitcoin-core = { path = "../gitcoin-core" }
-gitcoin-crypto = { path = "../gitcoin-crypto" }
+gitgold-core = { path = "../gitgold-core" }
+gitgold-crypto = { path = "../gitgold-crypto" }
 rusqlite = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

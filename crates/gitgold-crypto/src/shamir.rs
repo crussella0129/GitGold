@@ -1,4 +1,4 @@
-use gitcoin_core::error::ShamirError;
+use gitgold_core::error::ShamirError;
 use num_bigint::BigUint;
 use num_bigint::RandBigInt;
 use rand::thread_rng;

@@ -1,11 +1,11 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/GitGold-core",
-    "crates/GitGold-crypto",
-    "crates/GitGold-storage",
-    "crates/GitGold-ledger",
-    "crates/GitGold-challenge",
+    "crates/gitgold-core",
+    "crates/gitgold-crypto",
+    "crates/gitgold-storage",
+    "crates/gitgold-ledger",
+    "crates/gitgold-challenge",
 ]
 
 [workspace.dependencies]
@@ -25,15 +25,15 @@ proptest = "1.4"
 
 # Root package for integration tests
 [package]
-name = "GitGold"
+name = "gitgold"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-GitGold-core = { path = "crates/GitGold-core" }
-GitGold-crypto = { path = "crates/GitGold-crypto" }
-GitGold-storage = { path = "crates/GitGold-storage" }
-GitGold-ledger = { path = "crates/GitGold-ledger" }
-GitGold-challenge = { path = "crates/GitGold-challenge" }
+gitgold-core = { path = "crates/gitgold-core" }
+gitgold-crypto = { path = "crates/gitgold-crypto" }
+gitgold-storage = { path = "crates/gitgold-storage" }
+gitgold-ledger = { path = "crates/gitgold-ledger" }
+gitgold-challenge = { path = "crates/gitgold-challenge" }
 serde_json = { workspace = true }
 hex = { workspace = true }

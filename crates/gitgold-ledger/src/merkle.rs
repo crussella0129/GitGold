@@ -1,5 +1,5 @@
-use gitcoin_core::types::Hash256;
-use gitcoin_crypto::hash::{sha256, sha256_pair};
+use gitgold_core::types::Hash256;
+use gitgold_crypto::hash::{sha256, sha256_pair};
 
 /// A Merkle tree built from leaf hashes, supporting root computation and inclusion proofs.
 #[derive(Debug, Clone)]

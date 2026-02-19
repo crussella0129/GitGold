@@ -1,5 +1,5 @@
-use gitcoin_core::error::LedgerError;
-use gitcoin_core::types::MicroGitCoin;
+use gitgold_core::error::LedgerError;
+use gitgold_core::types::MicroGitGold;
 
 /// Tracks total supply, minted amount, and burned amount.
 ///
@@ -10,11 +10,11 @@ use gitcoin_core::types::MicroGitCoin;
 #[derive(Debug, Clone)]
 pub struct SupplyTracker {
     /// Maximum initial supply in micro-GC.
-    initial_supply: MicroGitCoin,
+    initial_supply: MicroGitGold,
     /// Total minted so far (including initial).
-    total_minted: MicroGitCoin,
+    total_minted: MicroGitGold,
     /// Total burned so far.
-    total_burned: MicroGitCoin,
+    total_burned: MicroGitGold,
     /// Base emission rate in basis points (200 = 2.00%).
     emission_rate_bps: u32,
     /// Annual decrease in emission rate (basis points).
@@ -22,7 +22,7 @@ pub struct SupplyTracker {
 }
 
 impl SupplyTracker {
-    pub fn new(initial_supply: MicroGitCoin, emission_rate_bps: u32, emission_decrease_bps: u32) -> Self {
+    pub fn new(initial_supply: MicroGitGold, emission_rate_bps: u32, emission_decrease_bps: u32) -> Self {
         Self {
             initial_supply,
             total_minted: initial_supply,
@@ -34,29 +34,29 @@ impl SupplyTracker {
 
     /// Create with whitepaper defaults.
     pub fn default_config() -> Self {
-        use gitcoin_core::config::GitCoinConfig;
-        let cfg = GitCoinConfig::default();
+        use gitgold_core::config::GitGoldConfig;
+        let cfg = GitGoldConfig::default();
         Self::new(cfg.initial_supply, cfg.emission_rate_bps, cfg.emission_decrease_bps)
     }
 
     /// Circulating supply = minted - burned.
-    pub fn circulating_supply(&self) -> MicroGitCoin {
+    pub fn circulating_supply(&self) -> MicroGitGold {
         self.total_minted.saturating_sub(self.total_burned)
     }
 
     /// Total ever minted.
-    pub fn total_minted(&self) -> MicroGitCoin {
+    pub fn total_minted(&self) -> MicroGitGold {
         self.total_minted
     }
 
     /// Total ever burned.
-    pub fn total_burned(&self) -> MicroGitCoin {
+    pub fn total_burned(&self) -> MicroGitGold {
         self.total_burned
     }
 
     /// Compute the emission allowance for a given year (0-indexed).
     /// Returns amount in micro-GC that can be emitted that year.
-    pub fn annual_emission(&self, year: u32) -> MicroGitCoin {
+    pub fn annual_emission(&self, year: u32) -> MicroGitGold {
         let rate_bps = self
             .emission_rate_bps
             .saturating_sub(self.emission_decrease_bps * year);
@@ -64,17 +64,17 @@ impl SupplyTracker {
             return 0;
         }
         // emission = initial_supply * rate / 10_000
-        (self.initial_supply as u128 * rate_bps as u128 / 10_000) as MicroGitCoin
+        (self.initial_supply as u128 * rate_bps as u128 / 10_000) as MicroGitGold
     }
 
     /// Mint new tokens (emission). Fails if it would exceed emission budget.
-    pub fn mint(&mut self, amount: MicroGitCoin) -> Result<(), LedgerError> {
+    pub fn mint(&mut self, amount: MicroGitGold) -> Result<(), LedgerError> {
         self.total_minted = self.total_minted.saturating_add(amount);
         Ok(())
     }
 
     /// Burn tokens.
-    pub fn burn(&mut self, amount: MicroGitCoin) {
+    pub fn burn(&mut self, amount: MicroGitGold) {
         self.total_burned = self.total_burned.saturating_add(amount);
     }
 }
@@ -82,7 +82,7 @@ impl SupplyTracker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gitcoin_core::types::MICRO_PER_COIN;
+    use gitgold_core::types::MICRO_PER_COIN;
 
     fn tracker() -> SupplyTracker {
         SupplyTracker::default_config()

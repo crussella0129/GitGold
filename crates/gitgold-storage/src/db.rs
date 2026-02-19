@@ -1,4 +1,4 @@
-use gitcoin_core::error::StorageError;
+use gitgold_core::error::StorageError;
 use rusqlite::Connection;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -45,7 +45,7 @@ impl FragmentStore {
         share_id: u32,
         data: &[u8],
     ) -> Result<(), StorageError> {
-        let data_hash = gitcoin_crypto::hash::sha256_hex(data);
+        let data_hash = gitgold_crypto::hash::sha256_hex(data);
         let now = unix_now();
 
         self.conn

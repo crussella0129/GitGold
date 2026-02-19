@@ -1,8 +1,8 @@
-use crate::types::{MicroGitCoin, MICRO_PER_COIN};
+use crate::types::{MicroGitGold, MICRO_PER_COIN};
 
 /// Configuration with whitepaper defaults.
 #[derive(Debug, Clone)]
-pub struct GitCoinConfig {
+pub struct GitGoldConfig {
     /// Shamir threshold (minimum shares to reconstruct).
     pub k: usize,
     /// Shamir total shares per chunk.
@@ -12,15 +12,15 @@ pub struct GitCoinConfig {
     /// Challenge timeout in seconds.
     pub challenge_timeout_secs: u64,
     /// Push fee rate in micro-GC per MB.
-    pub push_fee_rate: MicroGitCoin,
+    pub push_fee_rate: MicroGitGold,
     /// Pull fee rate in micro-GC per MB (50% of push).
-    pub pull_fee_rate: MicroGitCoin,
+    pub pull_fee_rate: MicroGitGold,
     /// Challenge bonus in micro-GC per successful challenge.
-    pub challenge_bonus: MicroGitCoin,
+    pub challenge_bonus: MicroGitGold,
     /// Bandwidth reward rate in micro-GC per MB.
-    pub bandwidth_rate: MicroGitCoin,
+    pub bandwidth_rate: MicroGitGold,
     /// Initial token supply in micro-GC.
-    pub initial_supply: MicroGitCoin,
+    pub initial_supply: MicroGitGold,
     /// Annual emission rate as basis points (200 = 2.00%).
     pub emission_rate_bps: u32,
     /// Annual emission rate decrease in basis points (10 = 0.10%).
@@ -35,7 +35,7 @@ pub struct GitCoinConfig {
     pub challenge_max_bytes: usize,
 }
 
-impl Default for GitCoinConfig {
+impl Default for GitGoldConfig {
     fn default() -> Self {
         Self {
             k: 5,
