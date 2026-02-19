@@ -1,11 +1,11 @@
-# GitCoin: A Decentralized, Incentivized Network for Git Repository Storage
+# GitGold: A Decentralized, Incentivized Network for Git Repository Storage
 
 **Version 1.0**  
 **February 2026**
 
 **Abstract**
 
-GitCoin is a decentralized peer-to-peer network for hosting Git repositories where storage nodes are economically incentivized through cryptographic proof-of-availability challenges rather than traditional centralized infrastructure. Users pay network fees proportional to storage and bandwidth consumption, while nodes earn cryptocurrency rewards for reliably storing and serving repository fragments. Using threshold secret sharing (branded as "Shamir's Magical Bullshit"), GitCoin ensures repositories remain reconstructable even with partial node failures, creating a self-regulating, fault-tolerant ecosystem for versioned data storage. This paper presents the mathematical foundations, economic model, security considerations, and implementation strategy for a production-ready system.
+GitGold is a decentralized peer-to-peer network for hosting Git repositories where storage nodes are economically incentivized through cryptographic proof-of-availability challenges rather than traditional centralized infrastructure. Users pay network fees proportional to storage and bandwidth consumption, while nodes earn cryptocurrency rewards for reliably storing and serving repository fragments. Using threshold secret sharing (branded as "Shamir's Magical Bullshit"), GitGold ensures repositories remain reconstructable even with partial node failures, creating a self-regulating, fault-tolerant ecosystem for versioned data storage. This paper presents the mathematical foundations, economic model, security considerations, and implementation strategy for a production-ready system.
 
 ---
 
@@ -39,7 +39,7 @@ The current paradigm for Git repository hosting relies on centralized platforms 
 - **Cost inefficiency**: Users pay for features bundled with hosting, whether needed or not
 - **Lock-in effects**: Migration between platforms requires significant technical effort
 
-GitCoin addresses these issues by distributing repository storage across a network of independent nodes, using economic incentives to ensure reliability without requiring centralized coordination.
+GitGold addresses these issues by distributing repository storage across a network of independent nodes, using economic incentives to ensure reliability without requiring centralized coordination.
 
 ### 1.2 Core Innovation
 
@@ -52,7 +52,7 @@ The fundamental insight is that **storage availability can be treated as a commo
 
 ### 1.3 Design Philosophy
 
-GitCoin is designed around three principles:
+GitGold is designed around three principles:
 
 **Principle 1: Boring Tasks Should Be Automated**  
 Routine maintenance (backups, replication, monitoring) should emerge from economic incentives rather than human labor.
@@ -113,7 +113,7 @@ A truly decentralized alternative must solve these issues while maintaining usab
 
 ### 3.1 Network Topology
 
-GitCoin operates as a structured peer-to-peer network with three participant types:
+GitGold operates as a structured peer-to-peer network with three participant types:
 
 **Users** initiate push and pull operations, paying network fees  
 **Nodes** store repository fragments and respond to availability challenges  
@@ -122,7 +122,7 @@ GitCoin operates as a structured peer-to-peer network with three participant typ
 ```
 ┌─────────────────────────────────────────────────┐
 │                    User Layer                    │
-│  (Git CLI with GitCoin shim for push/pull)      │
+│  (Git CLI with GitGold shim for push/pull)      │
 └────────────────┬────────────────────────────────┘
                  │
                  ▼
@@ -188,7 +188,7 @@ Reconstruction → Git Pack → User
 
 ### 4.1 Shamir Secret Sharing
 
-GitCoin uses Shamir's Secret Sharing scheme for threshold encoding. Given a secret `S`, the scheme generates `n` shares where any `k` shares can reconstruct `S`.
+GitGold uses Shamir's Secret Sharing scheme for threshold encoding. Given a secret `S`, the scheme generates `n` shares where any `k` shares can reconstruct `S`.
 
 **Construction:**
 
@@ -275,7 +275,7 @@ Users pay fees for two operations:
 F_push = size_MB × base_rate_per_MB × congestion_multiplier × (n/k)
 
 Where:
-base_rate_per_MB    = 0.001 GitCoin/MB (adjustable)
+base_rate_per_MB    = 0.001 GitGold/MB (adjustable)
 congestion_multiplier = 1 + (active_pushes / network_capacity)
 (n/k)               = redundancy overhead
 ```
@@ -305,7 +305,7 @@ uptime_score     = challenges_passed / challenges_issued
 R_challenge = challenge_bonus × (1 + speed_bonus)
 
 Where:
-challenge_bonus = 0.01 GitCoin per successful challenge
+challenge_bonus = 0.01 GitGold per successful challenge
 speed_bonus    = max(0, 1 - response_time/timeout) × 0.5
 ```
 
@@ -314,7 +314,7 @@ speed_bonus    = max(0, 1 - response_time/timeout) × 0.5
 R_bandwidth = bytes_served × bandwidth_rate
 
 Where:
-bandwidth_rate = 0.0005 GitCoin/MB
+bandwidth_rate = 0.0005 GitGold/MB
 ```
 
 **Total Node Revenue:**
@@ -345,19 +345,19 @@ Required Revenue:
 R_target = $18 / 0.7 = $25.71/month (for 30% margin)
 
 Required Storage:
-If block_reward_rate = 0.035 GitCoin/GB/month
+If block_reward_rate = 0.035 GitGold/GB/month
 Required: 734 GB active storage @ 90% uptime
 
-If GitCoin = $0.10:
-Required: $25.71 / $0.10 = 257.1 GitCoin/month
+If GitGold = $0.10:
+Required: $25.71 / $0.10 = 257.1 GitGold/month
 ```
 
 This demonstrates that **residential hardware can profitably participate** in the network.
 
 ### 5.4 Token Economics
 
-**GitCoin Supply:**
-- **Initial Supply**: 100,000,000 GitCoin (100M)
+**GitGold Supply:**
+- **Initial Supply**: 100,000,000 GitGold (100M)
 - **Emission Schedule**: 2% annual inflation, decreasing 0.1% per year
 - **Allocation**:
   - 40% - Node operators (rewards pool)
@@ -372,7 +372,7 @@ This demonstrates that **residential hardware can profitably participate** in th
 
 **Value Accrual:**
 ```
-GitCoin_demand = (Push_volume + Pull_volume) / Token_velocity
+GitGold_demand = (Push_volume + Pull_volume) / Token_velocity
 
 Where:
 Token_velocity = transactions_per_token per time period
@@ -395,7 +395,7 @@ Token_velocity = transactions_per_token per time period
 ### 6.2 Defense Mechanisms
 
 **Sybil Resistance:**
-- **Stake Requirement**: Nodes must stake minimum GitCoin (e.g., 100 GC)
+- **Stake Requirement**: Nodes must stake minimum GitGold (e.g., 100 GC)
 - **Proof-of-Work Join**: New nodes solve computational puzzle to join
 - **Reputation System**: Long-lived nodes with high uptime score gain priority
 
@@ -440,13 +440,13 @@ Expected time to challenge = total_fragments / challenges_per_block
 - **Bootstrap Node Diversity**: Maintain list of geographically distributed bootstrap nodes
 
 **Spam Prevention:**
-- **Minimum Fee**: 0.001 GitCoin per MB deters micro-spam
+- **Minimum Fee**: 0.001 GitGold per MB deters micro-spam
 - **Rate Limiting**: Max 100 pushes per user per day (configurable)
 - **Garbage Collection**: Unreferenced objects deleted after 90 days of inactivity
 
 ### 6.3 Byzantine Fault Tolerance
 
-GitCoin tolerates Byzantine faults (malicious nodes) through:
+GitGold tolerates Byzantine faults (malicious nodes) through:
 
 **Assumption**: Fewer than `f` out of `n` nodes are Byzantine, where `f < n - k`.
 
@@ -466,7 +466,7 @@ GitCoin tolerates Byzantine faults (malicious nodes) through:
 
 ### 7.1 Node Discovery (Kademlia DHT)
 
-GitCoin uses a Kademlia Distributed Hash Table for node discovery and routing.
+GitGold uses a Kademlia Distributed Hash Table for node discovery and routing.
 
 **Node ID Space**: 256-bit identifiers (SHA256 of public key)
 
@@ -536,7 +536,7 @@ GET_FRAGMENT {
     repo_hash: SHA256,
     fragment_id: uint32,
     payment_proof: {
-        amount: GitCoin,
+        amount: GitGold,
         signature: ECDSA(repo_hash || amount)
     }
 }
@@ -600,15 +600,15 @@ def validate_challenge_response(challenge, response, expected_hash):
 
 ### 8.1 Git Integration
 
-GitCoin integrates with Git via a custom remote helper:
+GitGold integrates with Git via a custom remote helper:
 
 **Installation:**
 ```bash
-# Install GitCoin CLI
-pip install gitcoin-cli
+# Install GitGold CLI
+pip install GitGold-cli
 
 # Configure Git remote
-git remote add gitcoin gc://repo-hash
+git remote add GitGold gc://repo-hash
 ```
 
 **Push Implementation:**
@@ -624,18 +624,18 @@ case "$1" in
         ;;
     push)
         while read src dst; do
-            gitcoin-cli push "$src" "$dst"
+            GitGold-cli push "$src" "$dst"
         done
         ;;
     fetch)
-        gitcoin-cli fetch "$2"
+        GitGold-cli fetch "$2"
         ;;
 esac
 ```
 
 **Python CLI (Simplified):**
 ```python
-# gitcoin_cli/push.py
+# GitGold_cli/push.py
 
 def push(repo_path, remote_url):
     # 1. Generate pack file
@@ -672,7 +672,7 @@ def push(repo_path, remote_url):
 
 **Node Daemon Architecture:**
 ```python
-class GitCoinNode:
+class GitGoldNode:
     def __init__(self, config):
         self.node_id = generate_node_id()
         self.storage = FragmentStorage(config.storage_path)
@@ -762,7 +762,7 @@ class FragmentStorage:
 
 ### 8.4 Ledger Design
 
-GitCoin uses a simple append-only ledger with Merkle tree verification:
+GitGold uses a simple append-only ledger with Merkle tree verification:
 
 **Transaction Types:**
 - `PUSH_FEE`: User pays for push operation
@@ -860,7 +860,7 @@ Total         = 6.3s
 **Comparison with GitHub:**
 ```
 GitHub clone (100MB repo): ~4-8s (depending on network)
-GitCoin pull (100MB repo): ~6-7s
+GitGold pull (100MB repo): ~6-7s
 
 Overhead: 20-30% slower due to reconstruction
 ```
@@ -887,7 +887,7 @@ Storage_with_compression = Original_size × compression_ratio × (n/k)
 
 Example (500MB working tree):
 Pack_size = 500MB × 0.4 = 200MB
-GitCoin_storage = 200MB × 1.8 = 360MB total network storage
+GitGold_storage = 200MB × 1.8 = 360MB total network storage
 ```
 
 ### 9.3 Network Bandwidth
@@ -975,7 +975,7 @@ SOM = 10,000 × 0.1TB × $60 = $60,000/year in Year 1
 
 ### 10.3 Competitive Analysis
 
-| Feature | GitHub | GitLab | GitCoin |
+| Feature | GitHub | GitLab | GitGold |
 |---------|--------|--------|---------|
 | Censorship Resistance | ❌ | ❌ | ✅ |
 | Pay-per-use Pricing | ❌ | ❌ | ✅ |
@@ -985,7 +985,7 @@ SOM = 10,000 × 0.1TB × $60 = $60,000/year in Year 1
 | Cost (100GB repo) | $4/mo | $9/mo | ~$0.60/mo |
 
 **Strategic Positioning:**
-GitCoin is **not** a GitHub replacement. It is **complementary infrastructure** for:
+GitGold is **not** a GitHub replacement. It is **complementary infrastructure** for:
 1. Cold storage / archival of large repos
 2. Mirror for censorship resistance
 3. Cost optimization for storage-heavy projects
@@ -1002,7 +1002,7 @@ GitCoin is **not** a GitHub replacement. It is **complementary infrastructure** 
 
 **Phase 3: General Availability (Months 24+)**
 - Target: General developer population
-- Tactic: GitHub/GitLab sync tools, one-click "archive to GitCoin"
+- Tactic: GitHub/GitLab sync tools, one-click "archive to GitGold"
 
 ---
 
@@ -1062,41 +1062,41 @@ User ←→ Payment Channel ←→ Node
 ```
 Proposal: Reduce base_rate_per_MB from 0.001 to 0.0008
 Voting Period: 30 days
-Quorum: 30% of staked GitCoin
+Quorum: 30% of staked GitGold
 Approval Threshold: 66%
 ```
 
 ### 11.3 Interoperability
 
 **Cross-Chain Bridges:**
-Allow GitCoin to be used on multiple blockchain ecosystems (Ethereum, Solana, etc.) via bridges.
+Allow GitGold to be used on multiple blockchain ecosystems (Ethereum, Solana, etc.) via bridges.
 
 **IPFS Integration:**
-Store Git objects as IPFS DAGs, use GitCoin for incentivization layer on top of IPFS.
+Store Git objects as IPFS DAGs, use GitGold for incentivization layer on top of IPFS.
 
 **Federation Protocol:**
-Allow different GitCoin networks to federate (e.g., enterprise GitCoin network ←→ public network).
+Allow different GitGold networks to federate (e.g., enterprise GitGold network ←→ public network).
 
 ---
 
 ## 12. Conclusion
 
-GitCoin represents a fundamental rethinking of Git repository infrastructure, moving from centralized platforms to a decentralized, economically self-sustaining network. Through the combination of threshold secret sharing, proof-of-availability challenges, and cryptoeconomic incentives, GitCoin automates the traditionally manual tasks of repository maintenance while providing strong fault tolerance guarantees.
+GitGold represents a fundamental rethinking of Git repository infrastructure, moving from centralized platforms to a decentralized, economically self-sustaining network. Through the combination of threshold secret sharing, proof-of-availability challenges, and cryptoeconomic incentives, GitGold automates the traditionally manual tasks of repository maintenance while providing strong fault tolerance guarantees.
 
 The mathematical foundations are sound: Shamir Secret Sharing provides information-theoretic security, threshold encoding ensures reconstruction even with partial node failures, and the economic model creates profitable opportunities for node operators while remaining cost-competitive with centralized alternatives.
 
 The system is technically feasible with current technology. Residential hardware (1TB SSD, 1Gbps connection) can profitably participate in the network. Latency overhead compared to centralized systems is modest (20-30%), acceptable for archive-first and compliance use cases.
 
-GitCoin is positioned not as a GitHub replacement but as **complementary infrastructure** for:
+GitGold is positioned not as a GitHub replacement but as **complementary infrastructure** for:
 1. Censorship-resistant code hosting
 2. Cost-optimized storage for large repositories
 3. Regulatory-compliant data distribution
 
 The path to adoption is clear: target technical early adopters (ML researchers, blockchain projects), demonstrate value through cost savings and resilience, then expand to enterprise compliance use cases.
 
-In the spirit of Newton and Leibniz—who saw mathematical systems as reflections of divine order—GitCoin embodies the principle that **boring tasks should emerge from elegant incentive structures rather than manual labor**. The network regulates itself through economic forces, much as physical systems regulate themselves through natural laws.
+In the spirit of Newton and Leibniz—who saw mathematical systems as reflections of divine order—GitGold embodies the principle that **boring tasks should emerge from elegant incentive structures rather than manual labor**. The network regulates itself through economic forces, much as physical systems regulate themselves through natural laws.
 
-The code is open-source. The protocol is extensible. The economics are tunable. GitCoin is ready to move from whitepaper to implementation.
+The code is open-source. The protocol is extensible. The economics are tunable. GitGold is ready to move from whitepaper to implementation.
 
 ---
 
@@ -1258,7 +1258,7 @@ import matplotlib.pyplot as plt
 
 class NetworkSimulation:
     """
-    Simulate GitCoin network economics over time
+    Simulate GitGold network economics over time
     """
     
     def __init__(self, num_nodes=1000, simulation_days=365):
@@ -1266,9 +1266,9 @@ class NetworkSimulation:
         self.simulation_days = simulation_days
         
         # Network parameters
-        self.base_rate_per_mb = 0.001  # GitCoin
-        self.storage_reward_rate = 0.035  # GitCoin/GB/month
-        self.challenge_bonus = 0.01  # GitCoin per challenge
+        self.base_rate_per_mb = 0.001  # GitGold
+        self.storage_reward_rate = 0.035  # GitGold/GB/month
+        self.challenge_bonus = 0.01  # GitGold per challenge
         
         # Node parameters (per node averages)
         self.avg_storage_gb = 500
@@ -1289,10 +1289,10 @@ class NetworkSimulation:
             'node_costs': [],
             'node_profit': [],
             'network_fees': [],
-            'gitcoin_price': []
+            'GitGold_price': []
         }
         
-        gitcoin_price = 0.10  # Initial price $0.10
+        GitGold_price = 0.10  # Initial price $0.10
         
         for day in range(self.simulation_days):
             # Calculate daily network fees
@@ -1305,7 +1305,7 @@ class NetworkSimulation:
             challenge_rewards = self.challenge_bonus * 10  # ~10 challenges/day
             bandwidth_rewards = (self.daily_pull_volume_mb / self.num_nodes) * 0.0005
             
-            node_revenue = (storage_rewards + challenge_rewards + bandwidth_rewards) * gitcoin_price
+            node_revenue = (storage_rewards + challenge_rewards + bandwidth_rewards) * GitGold_price
             
             # Calculate node costs
             node_costs = (
@@ -1316,18 +1316,18 @@ class NetworkSimulation:
             
             node_profit = node_revenue - node_costs
             
-            # Update GitCoin price based on demand
+            # Update GitGold price based on demand
             # Simple model: price increases with network usage
             demand_factor = total_fees / (self.num_nodes * 100)
-            gitcoin_price *= (1 + demand_factor * 0.001)
+            GitGold_price *= (1 + demand_factor * 0.001)
             
             # Store results
             results['days'].append(day)
             results['node_revenue'].append(node_revenue)
             results['node_costs'].append(node_costs)
             results['node_profit'].append(node_profit)
-            results['network_fees'].append(total_fees * gitcoin_price)
-            results['gitcoin_price'].append(gitcoin_price)
+            results['network_fees'].append(total_fees * GitGold_price)
+            results['GitGold_price'].append(GitGold_price)
         
         return results
     
@@ -1348,9 +1348,9 @@ class NetworkSimulation:
         axes[0, 1].set_title('Daily Network Fees ($)')
         axes[0, 1].grid(True)
         
-        # GitCoin price
-        axes[1, 0].plot(results['days'], results['gitcoin_price'])
-        axes[1, 0].set_title('GitCoin Price ($)')
+        # GitGold price
+        axes[1, 0].plot(results['days'], results['GitGold_price'])
+        axes[1, 0].set_title('GitGold Price ($)')
         axes[1, 0].grid(True)
         
         # Cumulative profit
@@ -1360,7 +1360,7 @@ class NetworkSimulation:
         axes[1, 1].grid(True)
         
         plt.tight_layout()
-        plt.savefig('gitcoin_simulation.png')
+        plt.savefig('GitGold_simulation.png')
         plt.show()
 
 
@@ -1371,7 +1371,7 @@ if __name__ == "__main__":
     
     print(f"Year-End Metrics:")
     print(f"  Average daily node profit: ${results['node_profit'][-1]:.2f}")
-    print(f"  GitCoin price: ${results['gitcoin_price'][-1]:.4f}")
+    print(f"  GitGold price: ${results['GitGold_price'][-1]:.4f}")
     print(f"  Total network fees: ${results['network_fees'][-1]:.2f}/day")
     
     sim.plot_results(results)
@@ -1397,7 +1397,7 @@ if __name__ == "__main__":
 
 **Erasure Coding**: A method of data protection where data is broken into fragments, expanded, encoded with redundant pieces, and stored across different locations.
 
-**GitCoin**: Both the network protocol and the cryptocurrency token used for paying fees and rewarding nodes.
+**GitGold**: Both the network protocol and the cryptocurrency token used for paying fees and rewarding nodes.
 
 ---
 
@@ -1407,6 +1407,7 @@ if __name__ == "__main__":
 
 **License**: This whitepaper is released under CC BY-SA 4.0. Implementation is open-source (MIT License).
 
-**Contact**: For inquiries about GitCoin implementation or collaboration: [contact information]
+**Contact**: For inquiries about GitGold implementation or collaboration: [contact information]
+
 
 **Repository**: Full specification and reference implementation available at: [repository URL]
