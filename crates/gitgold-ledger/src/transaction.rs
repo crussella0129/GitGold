@@ -21,14 +21,16 @@ pub struct Transaction {
     pub timestamp: i64,
     /// Ed25519 signature over signable_bytes (hex-encoded).
     pub signature: String,
+    /// Ed25519 public key of the sender (hex-encoded).
+    pub pubkey: String,
 }
 
 impl Transaction {
     /// Compute the bytes that should be signed.
     pub fn signable_bytes(&self) -> Vec<u8> {
         format!(
-            "{}{}{}{}{}{}",
-            self.tx_id, self.from, self.to, self.amount, self.timestamp, self.metadata
+            "{}{}{}{}{}{}{}",
+            self.tx_id, self.from, self.to, self.amount, self.timestamp, self.metadata, self.pubkey
         )
         .into_bytes()
     }
@@ -53,6 +55,7 @@ mod tests {
             metadata: serde_json::json!({}),
             timestamp: 1700000000,
             signature: String::new(),
+            pubkey: String::new(),
         }
     }
 

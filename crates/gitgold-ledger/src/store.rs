@@ -1,5 +1,7 @@
 use gitgold_core::error::LedgerError;
 use gitgold_core::types::{Address, MicroGitGold, TransactionType};
+use gitgold_crypto::hash::sha256_hex;
+use gitgold_crypto::keys::PublicKey;
 use rusqlite::Connection;
 use std::collections::HashSet;
 
@@ -44,7 +46,8 @@ impl Ledger {
                 amount      INTEGER NOT NULL,
                 metadata    TEXT NOT NULL,
                 timestamp   INTEGER NOT NULL,
-                signature   TEXT NOT NULL
+                signature   TEXT NOT NULL,
+                pubkey      TEXT NOT NULL
             );
 
             CREATE INDEX IF NOT EXISTS idx_tx_from ON transactions (from_addr);
@@ -80,7 +83,7 @@ impl Ledger {
     fn load_all_txs(conn: &Connection) -> Result<Vec<Transaction>, LedgerError> {
         let mut stmt = conn
             .prepare(
-                "SELECT tx_id, tx_type, from_addr, to_addr, amount, metadata, timestamp, signature
+                "SELECT tx_id, tx_type, from_addr, to_addr, amount, metadata, timestamp, signature, pubkey
                  FROM transactions ORDER BY rowid",
             )
             .map_err(|e| LedgerError::Database(e.to_string()))?;
@@ -98,6 +101,7 @@ impl Ledger {
                 metadata: serde_json::from_str(&metadata_str).unwrap_or(serde_json::json!({})),
                 timestamp: row.get(6)?,
                 signature: row.get(7)?,
+                pubkey: row.get(8)?,
             })
         })
         .map_err(|e| LedgerError::Database(e.to_string()))?;
@@ -141,9 +145,31 @@ impl Ledger {
     /// Append a new transaction to the ledger.
     ///
     /// Validates:
+    /// - Signature is valid for the 'from' address
     /// - No duplicate tx_id
     /// - Sufficient balance for debits
     pub fn append(&mut self, tx: Transaction) -> Result<(), LedgerError> {
+        // Signature Verification (skip for system address)
+        if tx.from != Address::system() {
+            // 1. Verify that the pubkey hashes to the 'from' address
+            let pubkey_bytes = hex::decode(&tx.pubkey)
+                .map_err(|_| LedgerError::InvalidTransaction("Invalid hex in pubkey".to_string()))?;
+            let derived_addr = sha256_hex(&pubkey_bytes);
+            if derived_addr != tx.from.0 {
+                return Err(LedgerError::InvalidSignature);
+            }
+
+            // 2. Verify the Ed25519 signature
+            let pk = PublicKey {
+                bytes: pubkey_bytes,
+            };
+            let sig_bytes = hex::decode(&tx.signature)
+                .map_err(|_| LedgerError::InvalidTransaction("Invalid hex in signature".to_string()))?;
+            if !pk.verify(&tx.signable_bytes(), &sig_bytes) {
+                return Err(LedgerError::InvalidSignature);
+            }
+        }
+
         // Duplicate check
         if self.tx_ids.contains(&tx.tx_id) {
             return Err(LedgerError::DuplicateTransaction(tx.tx_id.clone()));
@@ -160,8 +186,8 @@ impl Ledger {
 
         self.conn
             .execute(
-                "INSERT INTO transactions (tx_id, tx_type, from_addr, to_addr, amount, metadata, timestamp, signature)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                "INSERT INTO transactions (tx_id, tx_type, from_addr, to_addr, amount, metadata, timestamp, signature, pubkey)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
                 rusqlite::params![
                     tx.tx_id,
                     tx_type_str,
@@ -171,6 +197,7 @@ impl Ledger {
                     serde_json::to_string(&tx.metadata).unwrap_or_default(),
                     tx.timestamp,
                     tx.signature,
+                    tx.pubkey,
                 ],
             )
             .map_err(|e| LedgerError::Database(e.to_string()))?;
@@ -210,6 +237,7 @@ impl Ledger {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use gitgold_crypto::keys::KeyPair;
 
     fn mint_tx(to: &str, amount: MicroGitGold) -> Transaction {
         Transaction {
@@ -221,20 +249,24 @@ mod tests {
             metadata: serde_json::json!({}),
             timestamp: 1700000000,
             signature: String::new(),
+            pubkey: String::new(),
         }
     }
 
-    fn transfer_tx(from: &str, to: &str, amount: MicroGitGold) -> Transaction {
-        Transaction {
+    fn transfer_tx(kp: &KeyPair, to: &str, amount: MicroGitGold) -> Transaction {
+        let mut tx = Transaction {
             tx_id: uuid::Uuid::new_v4().to_string(),
             tx_type: TransactionType::Transfer,
-            from: Address::new(from),
+            from: kp.address(),
             to: Address::new(to),
             amount,
             metadata: serde_json::json!({}),
             timestamp: 1700000000,
             signature: String::new(),
-        }
+            pubkey: hex::encode(kp.public_key().bytes),
+        };
+        tx.signature = hex::encode(kp.sign(&tx.signable_bytes()));
+        tx
     }
 
     #[test]
@@ -247,29 +279,52 @@ mod tests {
     #[test]
     fn test_transfer_updates_balances() {
         let mut ledger = Ledger::in_memory().unwrap();
-        ledger.append(mint_tx("alice", 1_000_000)).unwrap();
+        let alice_kp = KeyPair::generate();
+        let alice_addr = alice_kp.address();
+
+        ledger.append(mint_tx(&alice_addr.0, 1_000_000)).unwrap();
         ledger
-            .append(transfer_tx("alice", "bob", 400_000))
+            .append(transfer_tx(&alice_kp, "bob", 400_000))
             .unwrap();
 
-        assert_eq!(ledger.balance(&Address::new("alice")), 600_000);
+        assert_eq!(ledger.balance(&alice_addr), 600_000);
         assert_eq!(ledger.balance(&Address::new("bob")), 400_000);
     }
 
     #[test]
     fn test_double_spend_rejected() {
         let mut ledger = Ledger::in_memory().unwrap();
-        ledger.append(mint_tx("alice", 500_000)).unwrap();
+        let alice_kp = KeyPair::generate();
+        let alice_addr = alice_kp.address();
+
+        ledger.append(mint_tx(&alice_addr.0, 500_000)).unwrap();
         ledger
-            .append(transfer_tx("alice", "bob", 300_000))
+            .append(transfer_tx(&alice_kp, "bob", 300_000))
             .unwrap();
 
         // Alice only has 200k left, can't send 300k
-        let result = ledger.append(transfer_tx("alice", "charlie", 300_000));
+        let result = ledger.append(transfer_tx(&alice_kp, "charlie", 300_000));
         assert!(matches!(
             result,
             Err(LedgerError::InsufficientBalance { .. })
         ));
+    }
+
+    #[test]
+    fn test_signature_verification_failure() {
+        let mut ledger = Ledger::in_memory().unwrap();
+        let alice_kp = KeyPair::generate();
+        let bob_kp = KeyPair::generate();
+        let alice_addr = alice_kp.address();
+
+        ledger.append(mint_tx(&alice_addr.0, 1_000_000)).unwrap();
+
+        // Bob tries to spend Alice's money
+        let mut bad_tx = transfer_tx(&bob_kp, "mallory", 300_000);
+        bad_tx.from = alice_addr; // forge 'from' address
+
+        let result = ledger.append(bad_tx);
+        assert!(matches!(result, Err(LedgerError::InvalidSignature)));
     }
 
     #[test]
@@ -288,6 +343,7 @@ mod tests {
             metadata: serde_json::json!({}),
             timestamp: 1700000000,
             signature: String::new(),
+            pubkey: String::new(),
         };
         assert!(matches!(
             ledger.append(duplicate),
@@ -298,20 +354,26 @@ mod tests {
     #[test]
     fn test_burn() {
         let mut ledger = Ledger::in_memory().unwrap();
-        ledger.append(mint_tx("alice", 1_000_000)).unwrap();
+        let alice_kp = KeyPair::generate();
+        let alice_addr = alice_kp.address();
 
-        let burn = Transaction {
+        ledger.append(mint_tx(&alice_addr.0, 1_000_000)).unwrap();
+
+        let mut burn = Transaction {
             tx_id: uuid::Uuid::new_v4().to_string(),
             tx_type: TransactionType::Burn,
-            from: Address::new("alice"),
+            from: alice_addr.clone(),
             to: Address::system(),
             amount: 100_000,
             metadata: serde_json::json!({}),
             timestamp: 1700000000,
             signature: String::new(),
+            pubkey: hex::encode(alice_kp.public_key().bytes),
         };
+        burn.signature = hex::encode(alice_kp.sign(&burn.signable_bytes()));
+
         ledger.append(burn).unwrap();
-        assert_eq!(ledger.balance(&Address::new("alice")), 900_000);
+        assert_eq!(ledger.balance(&alice_addr), 900_000);
         assert_eq!(ledger.supply().total_burned(), 100_000);
     }
 
