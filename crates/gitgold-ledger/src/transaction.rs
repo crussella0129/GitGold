@@ -55,6 +55,7 @@ mod tests {
             metadata: serde_json::json!({}),
             timestamp: 1700000000,
             signature: String::new(),
+            pubkey: String::new(),
         }
     }
 
