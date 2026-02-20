@@ -102,7 +102,8 @@ fn test_shamir_any_subset() {
 #[test]
 fn test_ledger_with_merkle_proofs() {
     let mut ledger = Ledger::in_memory().unwrap();
-    let alice = Address::new("alice");
+    let alice_kp = KeyPair::generate();
+    let alice = alice_kp.address();
     let bob = Address::new("bob");
 
     // Mint tokens to Alice
@@ -116,36 +117,39 @@ fn test_ledger_with_merkle_proofs() {
             metadata: serde_json::json!({"reason": "initial allocation"}),
             timestamp: 1700000000,
             signature: String::new(),
+            pubkey: String::new(),
         })
         .unwrap();
 
     // Alice transfers to Bob
-    ledger
-        .append(Transaction {
-            tx_id: "tx-transfer-1".to_string(),
-            tx_type: TransactionType::Transfer,
-            from: alice.clone(),
-            to: bob.clone(),
-            amount: 3_000_000,
-            metadata: serde_json::json!({}),
-            timestamp: 1700000001,
-            signature: String::new(),
-        })
-        .unwrap();
+    let mut transfer_tx = Transaction {
+        tx_id: "tx-transfer-1".to_string(),
+        tx_type: TransactionType::Transfer,
+        from: alice.clone(),
+        to: bob.clone(),
+        amount: 3_000_000,
+        metadata: serde_json::json!({}),
+        timestamp: 1700000001,
+        signature: String::new(),
+        pubkey: hex::encode(alice_kp.public_key().bytes),
+    };
+    transfer_tx.signature = hex::encode(alice_kp.sign(&transfer_tx.signable_bytes()));
+    ledger.append(transfer_tx).unwrap();
 
     // Alice burns some tokens
-    ledger
-        .append(Transaction {
-            tx_id: "tx-burn-1".to_string(),
-            tx_type: TransactionType::Burn,
-            from: alice.clone(),
-            to: Address::system(),
-            amount: 1_000_000,
-            metadata: serde_json::json!({}),
-            timestamp: 1700000002,
-            signature: String::new(),
-        })
-        .unwrap();
+    let mut burn_tx = Transaction {
+        tx_id: "tx-burn-1".to_string(),
+        tx_type: TransactionType::Burn,
+        from: alice.clone(),
+        to: Address::system(),
+        amount: 1_000_000,
+        metadata: serde_json::json!({}),
+        timestamp: 1700000002,
+        signature: String::new(),
+        pubkey: hex::encode(alice_kp.public_key().bytes),
+    };
+    burn_tx.signature = hex::encode(alice_kp.sign(&burn_tx.signable_bytes()));
+    ledger.append(burn_tx).unwrap();
 
     // Verify balances
     assert_eq!(ledger.balance(&alice), 6_000_000);
@@ -167,6 +171,8 @@ fn test_ledger_with_merkle_proofs() {
 #[test]
 fn test_ledger_security() {
     let mut ledger = Ledger::in_memory().unwrap();
+    let alice_kp = KeyPair::generate();
+    let alice = alice_kp.address();
 
     // Mint 1M to Alice
     ledger
@@ -174,39 +180,44 @@ fn test_ledger_security() {
             tx_id: "mint-1".to_string(),
             tx_type: TransactionType::Mint,
             from: Address::system(),
-            to: Address::new("alice"),
+            to: alice.clone(),
             amount: 1_000_000,
             metadata: serde_json::json!({}),
             timestamp: 1700000000,
             signature: String::new(),
+            pubkey: String::new(),
         })
         .unwrap();
 
     // Spend 800k
-    ledger
-        .append(Transaction {
-            tx_id: "spend-1".to_string(),
-            tx_type: TransactionType::Transfer,
-            from: Address::new("alice"),
-            to: Address::new("bob"),
-            amount: 800_000,
-            metadata: serde_json::json!({}),
-            timestamp: 1700000001,
-            signature: String::new(),
-        })
-        .unwrap();
+    let mut spend_tx = Transaction {
+        tx_id: "spend-1".to_string(),
+        tx_type: TransactionType::Transfer,
+        from: alice.clone(),
+        to: Address::new("bob"),
+        amount: 800_000,
+        metadata: serde_json::json!({}),
+        timestamp: 1700000001,
+        signature: String::new(),
+        pubkey: hex::encode(alice_kp.public_key().bytes),
+    };
+    spend_tx.signature = hex::encode(alice_kp.sign(&spend_tx.signable_bytes()));
+    ledger.append(spend_tx).unwrap();
 
     // Try to spend 300k more (only 200k left) -- should fail
-    let result = ledger.append(Transaction {
+    let mut spend_tx2 = Transaction {
         tx_id: "spend-2".to_string(),
         tx_type: TransactionType::Transfer,
-        from: Address::new("alice"),
+        from: alice.clone(),
         to: Address::new("charlie"),
         amount: 300_000,
         metadata: serde_json::json!({}),
         timestamp: 1700000002,
         signature: String::new(),
-    });
+        pubkey: hex::encode(alice_kp.public_key().bytes),
+    };
+    spend_tx2.signature = hex::encode(alice_kp.sign(&spend_tx2.signable_bytes()));
+    let result = ledger.append(spend_tx2);
     assert!(matches!(
         result,
         Err(LedgerError::InsufficientBalance { .. })
@@ -217,11 +228,12 @@ fn test_ledger_security() {
         tx_id: "mint-1".to_string(), // duplicate!
         tx_type: TransactionType::Mint,
         from: Address::system(),
-        to: Address::new("alice"),
+        to: alice.clone(),
         amount: 999,
         metadata: serde_json::json!({}),
         timestamp: 1700000003,
         signature: String::new(),
+        pubkey: String::new(),
     });
     assert!(matches!(
         result,
@@ -229,7 +241,7 @@ fn test_ledger_security() {
     ));
 
     // Balances unchanged after failed operations
-    assert_eq!(ledger.balance(&Address::new("alice")), 200_000);
+    assert_eq!(ledger.balance(&alice), 200_000);
     assert_eq!(ledger.balance(&Address::new("bob")), 800_000);
 }
 
@@ -311,6 +323,7 @@ fn test_store_challenge_reward_flow() {
             }),
             timestamp: 1700000000,
             signature: String::new(),
+            pubkey: String::new(),
         })
         .unwrap();
 
