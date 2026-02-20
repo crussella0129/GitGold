@@ -22,6 +22,7 @@ num-bigint = { version = "0.4", features = ["rand"] }
 num-traits = "0.2"
 ed25519-dalek = { version = "2.1", features = ["serde", "rand_core"] }
 proptest = "1.4"
+criterion = { version = "0.5", features = ["html_reports"] }
 
 # Root package for integration tests
 [package]
